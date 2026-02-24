@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestoría Centralita GTA V</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+* {margin:0;padding:0;box-sizing:border-box;}
+:root {
+  --bg-dark:#0f0f0f;
+  --panel-dark:#1a1a1a;
+  --accent-green:#00ff99;
+  --accent-orange:#ff9933;
+  --text-light:#f0f0f0;
+  --glow:#00ff99aa;
+}
+
+body {
+  font-family:'Share Tech Mono', monospace;
+  background:#0a0a0a;
+  color:var(--text-light);
+  min-height:100vh;
+}
+
+.container{
+  max-width:900px;
+  margin:0 auto;
+  padding:30px 20px;
+}
+
+header{text-align:center;margin-bottom:40px;}
+h1{
+  font-family:'Orbitron', sans-serif;
+  font-size:2.5rem;
+  font-weight:900;
+  background:linear-gradient(135deg,var(--accent-orange),var(--accent-green));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  text-shadow:0 0 10px var(--glow),0 0 20px var(--accent-orange);
+}
+.subtitle{
+  font-size:1rem;color:var(--accent-green);
+  text-transform:uppercase;margin-top:5px;
+}
+
+.tabs {display:flex;gap:10px;margin-bottom:20px;}
+.tab {
+  flex:1;
+  padding:12px;
+  text-align:center;
+  background:var(--panel-dark);
+  border:1px solid var(--accent-green);
+  border-radius:6px;
+  cursor:pointer;
+  transition:all 0.2s;
+  color:var(--text-light);
+  text-shadow: 0 0 3px #000;
+}
+.tab.active {background:var(--accent-green);color:#000;text-shadow:none;}
+
+.panel {
+  display:none;
+  background:var(--panel-dark);
+  border:2px solid var(--accent-green);
+  border-radius:12px;
+  padding:20px;
+  box-shadow:0 0 15px #000 inset, 0 0 20px var(--accent-green);
+}
+.panel.active {display:block;}
+
+input, select {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:6px;
+  border:1px solid var(--accent-green);
+  background:#111;
+  color:var(--text-light);
+  font-family:'Share Tech Mono', monospace;
+  font-size:0.95rem;
+}
+input:focus {outline:none;border-color:var(--accent-orange);box-shadow:0 0 8px var(--accent-orange);}
+
+button {
+  width:100%;
+  padding:15px;
+  margin-top:15px;
+  background:linear-gradient(135deg,var(--accent-orange),var(--accent-green));
+  border:none;
+  border-radius:6px;
+  color:#000;
+  font-family:'Orbitron', sans-serif;
+  font-weight:700;
+  cursor:pointer;
+  text-shadow:0 0 5px #000;
+  transition:all 0.2s;
+}
+button:hover {transform:translateY(-2px);box-shadow:0 0 10px var(--accent-green);}
+
+#listaNegocios .negocio-card{
+  display:flex;
+  align-items:center;
+  gap:15px;
+  padding:10px;
+  border-bottom:1px solid rgba(0,255,153,0.2);
+  transition:0.2s;
+}
+#listaNegocios .negocio-card:hover{
+  background:rgba(0,255,153,0.1);
+  box-shadow:0 0 10px var(--accent-green);
+}
+#listaNegocios img{
+  width:60px;
+  height:60px;
+  object-fit:cover;
+  border-radius:8px;
+  border:2px solid var(--accent-green);
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<header>
+  <h1>📊 Reagan Bros Centralita</h1>
+  <p class="subtitle">Gestión GTA V style</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="agregar">➕ Agregar negocio</div>
+  <div class="tab" data-tab="actualizar">✏️ Actualizar negocio</div>
+  <div class="tab" data-tab="lista">📋 Lista de negocios</div>
+</div>
+
+<div class="panel active" id="agregar">
+  <h2>Agregar negocio</h2>
+  <input id="nombreNegocio" placeholder="Nombre del negocio">
+  <input id="accionesNegocio" type="number" placeholder="Número de acciones">
+  <input id="imagenNegocio" placeholder="URL de imagen del negocio">
+  <button onclick="agregarNegocio()">Agregar negocio</button>
+</div>
+
+<div class="panel" id="actualizar">
+  <h2>Actualizar negocio</h2>
+  <input id="localId" placeholder="ID del negocio">
+  <input id="nuevoValor" type="number" placeholder="Nuevo número de acciones">
+  <input id="nuevaImagen" placeholder="Nueva URL de imagen (opcional)">
+  <button onclick="actualizarNegocio()">Actualizar negocio</button>
+</div>
+
+<div class="panel" id="lista">
+  <h2>Lista en tiempo real</h2>
+  <div id="listaNegocios"></div>
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// Config Firebase (tuya)
+const firebaseConfig = {
+  apiKey: "AIzaSyAVJ5PrfRQpjPfgVXvlXGTrlaNLckaRY6U",
+  authDomain: "reaganbroscompany.firebaseapp.com",
+  projectId: "reaganbroscompany",
+  storageBucket: "reaganbroscompany.firebasestorage.app",
+  messagingSenderId: "792852543624",
+  appId: "1:792852543624:web:62e71a8704cb346f22873d",
+  measurementId: "G-Q6EJV3LJF9"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Funciones
+function actualizarLista() {
+  const lista = document.getElementById("listaNegocios");
+  onValue(ref(db, 'negocios/'), snapshot => {
+    const data = snapshot.val() || {};
+    lista.innerHTML = '';
+    for (let key in data) {
+      const imgTag = data[key].imagen ? `<img src="${data[key].imagen}">` : '';
+      lista.innerHTML += `<div class="negocio-card">${imgTag}<div>${data[key].nombre} - ${data[key].acciones} acciones<br><small>ID: ${key}</small></div></div>`;
+    }
+  });
+}
+
+window.agregarNegocio = () => {
+  const nombre = document.getElementById("nombreNegocio").value;
+  const acciones = Number(document.getElementById("accionesNegocio").value);
+  const imagen = document.getElementById("imagenNegocio").value;
+  if(!nombre || isNaN(acciones)) return alert("Nombre y acciones válidas");
+  const key = nombre.toLowerCase().replace(/\s+/g,'-');
+  set(ref(db,'negocios/'+key),{nombre,acciones,imagen});
+  document.getElementById("nombreNegocio").value='';
+  document.getElementById("accionesNegocio").value='';
+  document.getElementById("imagenNegocio").value='';
+};
+
+window.actualizarNegocio = () => {
+  const key = document.getElementById("localId").value;
+  const nuevasAcciones = Number(document.getElementById("nuevoValor").value);
+  const nuevaImagen = document.getElementById("nuevaImagen").value;
+  if(!key || isNaN(nuevasAcciones)) return alert("ID válido y número de acciones requerido");
+  const updates = {acciones:nuevasAcciones};
+  if(nuevaImagen) updates.imagen = nuevaImagen;
+  update(ref(db,'negocios/'+key),updates);
+  document.getElementById("localId").value='';
+  document.getElementById("nuevoValor").value='';
+  document.getElementById("nuevaImagen").value='';
+};
+
+actualizarLista();
+
+const tabs = document.querySelectorAll('.tab');
+const panels = document.querySelectorAll('.panel');
+tabs.forEach(tab => {
+  tab.addEventListener('click',()=>{
+    tabs.forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.dataset.tab;
+    panels.forEach(p=>p.classList.remove('active'));
+    document.getElementById(target).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
