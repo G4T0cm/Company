@@ -6,6 +6,7 @@
 <title>Reagan Bros Company</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 * {margin:0;padding:0;box-sizing:border-box;}
@@ -23,225 +24,420 @@ body {
   background:#0a0a0a;
   color:var(--text-light);
   min-height:100vh;
+  position: relative;
 }
 
-.container{
-  max-width:900px;
-  margin:0 auto;
-  padding:30px 20px;
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-image: url("https://static0.gamerantimages.com/wordpress/wp-content/uploads/2023/07/best-businesses-to-buy-in-gta-online.jpg");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.15;
+  z-index: -1;
 }
+
+.container{max-width:1000px;margin:0 auto;padding:30px 20px;}
 
 header{text-align:center;margin-bottom:40px;}
-h1{
-  font-family:'Orbitron', sans-serif;
-  font-size:2.5rem;
-  font-weight:900;
+h1{font-family:'Orbitron', sans-serif;font-size:2.5rem;font-weight:900;
   background:linear-gradient(135deg,var(--accent-orange),var(--accent-green));
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  text-shadow:0 0 10px var(--glow),0 0 20px var(--accent-orange);
-}
-.subtitle{
-  font-size:1rem;color:var(--accent-green);
-  text-transform:uppercase;margin-top:5px;
-}
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:0 0 10px var(--glow),0 0 20px var(--accent-orange);}
+.subtitle{font-size:1rem;color:var(--accent-green);text-transform:uppercase;margin-top:5px;}
 
-.tabs {display:flex;gap:10px;margin-bottom:20px;}
-.tab {
-  flex:1;
-  padding:12px;
-  text-align:center;
-  background:var(--panel-dark);
-  border:1px solid var(--accent-green);
-  border-radius:6px;
-  cursor:pointer;
-  transition:all 0.2s;
-  color:var(--text-light);
-  text-shadow: 0 0 3px #000;
-}
+.tabs {display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.tab {flex:1;padding:12px;text-align:center;background:var(--panel-dark);
+border:1px solid var(--accent-green);border-radius:6px;cursor:pointer;
+transition:all 0.2s;color:var(--text-light);text-shadow: 0 0 3px #000;}
 .tab.active {background:var(--accent-green);color:#000;text-shadow:none;}
 
-.panel {
-  display:none;
-  background:var(--panel-dark);
-  border:2px solid var(--accent-green);
-  border-radius:12px;
-  padding:20px;
-  box-shadow:0 0 15px #000 inset, 0 0 20px var(--accent-green);
-}
+.panel {display:none;background:var(--panel-dark);border:2px solid var(--accent-green);
+border-radius:12px;padding:20px;box-shadow:0 0 15px #000 inset, 0 0 20px var(--accent-green);}
 .panel.active {display:block;}
 
-input, select {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:6px;
-  border:1px solid var(--accent-green);
-  background:#111;
-  color:var(--text-light);
-  font-family:'Share Tech Mono', monospace;
-  font-size:0.95rem;
-}
+input, select {width:100%;padding:12px;margin-top:10px;border-radius:6px;
+border:1px solid var(--accent-green);background:#111;color:var(--text-light);
+font-family:'Share Tech Mono', monospace;font-size:0.95rem;}
 input:focus {outline:none;border-color:var(--accent-orange);box-shadow:0 0 8px var(--accent-orange);}
 
-button {
-  width:100%;
-  padding:15px;
-  margin-top:15px;
-  background:linear-gradient(135deg,var(--accent-orange),var(--accent-green));
-  border:none;
-  border-radius:6px;
-  color:#000;
-  font-family:'Orbitron', sans-serif;
-  font-weight:700;
-  cursor:pointer;
-  text-shadow:0 0 5px #000;
-  transition:all 0.2s;
-}
-button:hover {transform:translateY(-2px);box-shadow:0 0 10px var(--accent-green);}
+button {cursor:pointer;}
+.btn {padding:6px 10px;border:none;border-radius:5px;font-family:'Share Tech Mono', monospace;
+font-weight:700;margin-left:5px;transition:0.2s;}
+.btn-save {background:#00ff99;color:#000;}
+.btn-delete {background:#ff0033;color:#fff;}
+.btn:hover {opacity:0.8;}
 
-#listaNegocios .negocio-card{
-  display:flex;
-  align-items:center;
-  gap:15px;
-  padding:10px;
-  border-bottom:1px solid rgba(0,255,153,0.2);
-  transition:0.2s;
+#listaNegocios .negocio-card, #listaClientes .cliente-card, #resultadoBusqueda .resultado-card{
+  display:flex;align-items:center;justify-content:space-between;padding:10px;
+  border-bottom:1px solid rgba(0,255,153,0.2);transition:0.2s;flex-wrap:wrap;}
+#listaNegocios .negocio-info, #listaClientes .cliente-info, #resultadoBusqueda .resultado-info{
+  display:flex;align-items:center;gap:15px;flex-wrap:wrap;}
+#listaNegocios img, #listaClientes img, #resultadoBusqueda img{width:60px;height:60px;
+object-fit:cover;border-radius:8px;border:2px solid var(--accent-green);}
+
+#popup {position:fixed;top:20px;right:20px;background:linear-gradient(135deg,var(--accent-orange),var(--accent-green));
+color:#000;padding:15px 20px;border-radius:10px;box-shadow:0 0 15px var(--accent-green);
+font-family:'Share Tech Mono', monospace;font-weight:700;display:none;z-index:999;}
+
+#loginOverlay {position:fixed;top:0; left:0;width:100%; height:100%;background:rgba(0,0,0,0.95);
+display:flex;align-items:center;justify-content:center;z-index:1000;}
+#loginBox {background:#1a1a1a;padding:30px;border-radius:12px;border:2px solid var(--accent-green);
+box-shadow:0 0 20px var(--accent-green);text-align:center;}
+#loginBox input {margin-top:10px;}
+#loginBox button {margin-top:15px;width:100%;padding:12px;background:linear-gradient(135deg,var(--accent-orange),var(--accent-green));
+border:none;border-radius:6px;color:#000;font-family:'Orbitron', sans-serif;font-weight:700; cursor:pointer;}
+
+#logsPanel {
+  position:fixed;top:10px;right:10px;width:300px;max-height:90vh;overflow-y:auto;
+  background:rgba(0,0,0,0.7);border:1px solid var(--accent-green);padding:10px;border-radius:8px;
+  font-size:0.85rem;z-index:100;
 }
-#listaNegocios .negocio-card:hover{
-  background:rgba(0,255,153,0.1);
-  box-shadow:0 0 10px var(--accent-green);
-}
-#listaNegocios img{
-  width:60px;
-  height:60px;
-  object-fit:cover;
-  border-radius:8px;
-  border:2px solid var(--accent-green);
-}
+#logsPanel h4{margin-bottom:10px;text-align:center;}
 </style>
 </head>
 <body>
+<div id="loginOverlay">
+  <div id="loginBox">
+    <h2>Iniciar sesión</h2>
+    <input type="text" id="loginEmail" placeholder="Email"><br>
+    <input type="password" id="loginPass" placeholder="Contraseña"><br>
+    <button onclick="login()">Entrar</button>
+    <p id="loginError" style="color:red;margin-top:10px;"></p>
+  </div>
+</div>
 
-<div class="container">
+<div class="container" style="display:none;">
 <header>
-  <h1>📊 Reagan Bros Centralita</h1>
-  <p class="subtitle">Gestion de Acciones</p>
+  <h1>📊 Reagan Bros</h1>
+  <p class="subtitle">Centralita</p>
 </header>
 
 <div class="tabs">
   <div class="tab active" data-tab="agregar">➕ Agregar negocio</div>
-  <div class="tab" data-tab="actualizar">✏️ Actualizar negocio</div>
   <div class="tab" data-tab="lista">📋 Lista de negocios</div>
+  <div class="tab" data-tab="clientes">👥 Clientes</div>
+  <div class="tab" data-tab="buscar">🔍 Buscar</div>
+  <div class="tab" data-tab="transacciones">💱 Transacciones</div>
 </div>
 
+<!-- AGREGAR NEGOCIO -->
 <div class="panel active" id="agregar">
   <h2>Agregar negocio</h2>
+  <input id="idNegocio" placeholder="ID del negocio (ej: mi-empresa)">
   <input id="nombreNegocio" placeholder="Nombre del negocio">
   <input id="accionesNegocio" type="number" placeholder="Número de acciones">
+  <input id="valorAccion" type="number" placeholder="Valor de acción">
   <input id="imagenNegocio" placeholder="URL de imagen del negocio">
-  <button onclick="agregarNegocio()">Agregar negocio</button>
+  <button class="btn btn-save" onclick="agregarNegocio()">Agregar negocio</button>
 </div>
 
-<div class="panel" id="actualizar">
-  <h2>Actualizar negocio</h2>
-  <input id="localId" placeholder="ID del negocio">
-  <input id="nuevoValor" type="number" placeholder="Nuevo número de acciones">
-  <input id="nuevaImagen" placeholder="Nueva URL de imagen (opcional)">
-  <button onclick="actualizarNegocio()">Actualizar negocio</button>
-</div>
-
+<!-- LISTA DE NEGOCIOS -->
 <div class="panel" id="lista">
-  <h2>Lista en tiempo real</h2>
+  <h2>Lista de negocios</h2>
   <div id="listaNegocios"></div>
 </div>
+
+<!-- CLIENTES -->
+<div class="panel" id="clientes">
+  <h2>Clientes</h2>
+  <input id="nombreCliente" placeholder="Nombre del cliente">
+  <input id="imagenCliente" placeholder="URL de imagen">
+  <button class="btn btn-save" onclick="agregarCliente()">Agregar Cliente</button>
+  <div id="listaClientes"></div>
 </div>
+
+<!-- BUSQUEDA -->
+<div class="panel" id="buscar">
+  <h2>Buscar Cliente o Negocio</h2>
+  <select id="selectBusquedaCliente">
+    <option value="">Selecciona un cliente</option>
+  </select>
+  <select id="selectBusquedaNegocio">
+    <option value="">Selecciona un negocio</option>
+  </select>
+  <button class="btn btn-save" onclick="buscarSeleccion()">Buscar</button>
+
+  <div id="resultadoBusqueda" style="margin-top:15px;"></div>
+  <canvas id="chartAcciones" style="margin-top:20px;"></canvas>
+</div>
+
+<!-- TRANSACCIONES -->
+<div class="panel" id="transacciones">
+  <h2>Transacciones</h2>
+  <select id="selectNegocioTrans"></select>
+  <select id="selectClienteTrans"></select>
+  <input id="cantidadAcciones" type="number" placeholder="Cantidad de acciones">
+  <select id="tipoTrans">
+    <option value="compra">Comprar</option>
+    <option value="venta">Vender</option>
+  </select>
+  <button class="btn btn-save" onclick="realizarTransaccion()">Realizar Transacción</button>
+</div>
+
+</div>
+
+<div id="popup"></div>
+<div id="logsPanel"><h4>Logs</h4><div id="logsContent"></div></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, push, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Config Firebase
 const firebaseConfig = {
-  apiKey: "…",
-  authDomain: "reaganbroscompany.firebaseapp.com",
-  databaseURL: "https://reaganbroscompany-default-rtdb.europe-west1.firebasedatabase.app/", // <- aquí
-  projectId: "reaganbroscompany",
-  storageBucket: "reaganbroscompany.firebasestorage.app",
-  messagingSenderId: "…",
-  appId: "…",
-  measurementId: "…"
+  apiKey:"AIzaSyAVJ5PrfRQpjPfgVXvlXGTrlaNLckaRY6U",
+  authDomain:"reaganbroscompany.firebaseapp.com",
+  databaseURL:"https://reaganbroscompany-default-rtdb.europe-west1.firebasedatabase.app/",
+  projectId:"reaganbroscompany",
+  storageBucket:"reaganbroscompany.firebasestorage.app",
+  messagingSenderId:"792852543624",
+  appId:"1:792852543624:web:62e71a8704cb346f22873d",
+  measurementId:"G-Q6EJV3LJF9"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const popup = document.getElementById("popup");
+const container = document.querySelector(".container");
+const logsContent = document.getElementById("logsContent");
 
-// Funciones
-function actualizarLista() {
-  const lista = document.getElementById("listaNegocios");
-  onValue(ref(db, 'negocios/'), snapshot => {
-    const data = snapshot.val() || {};
-    lista.innerHTML = '';
-    for (let key in data) {
-      const imgTag = data[key].imagen ? `<img src="${data[key].imagen}">` : '';
-      lista.innerHTML += `<div class="negocio-card">${imgTag}<div>${data[key].nombre} - ${data[key].acciones} acciones<br><small>ID: ${key}</small></div></div>`;
+// LOGIN
+const USER_HASH = "cmVhZ2FuQGNvbXBhbnkuY29t"; 
+const PASS_HASH = "R2F0bzEyMw=="; 
+window.login = () => {
+  const email = document.getElementById("loginEmail").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+  const error = document.getElementById("loginError");
+  if(btoa(email)===USER_HASH && btoa(pass)===PASS_HASH){
+    document.getElementById("loginOverlay").style.display="none";
+    container.style.display="block";
+    cargarDatos();
+  } else { error.innerText = "Email o contraseña incorrectos"; }
+};
+
+// POPUP
+function showPopup(msg){ popup.innerText=msg; popup.style.display="block"; setTimeout(()=> popup.style.display="none",2000); }
+
+// DATOS
+let clientesData={}, negociosData={};
+async function cargarDatos(){
+  const clientesSnap = await get(ref(db,'clientes/')); clientesData = clientesSnap.val()||{};
+  const negociosSnap = await get(ref(db,'negocios/')); negociosData = negociosSnap.val()||{};
+  actualizarLista();
+  actualizarClientes();
+  actualizarSelectTrans();
+  actualizarSelectBusqueda();
+  actualizarLogs();
+}
+
+// ------------------ NEGOCIOS ------------------
+function actualizarLista(){
+  const lista=document.getElementById("listaNegocios");
+  onValue(ref(db,'negocios/'), snapshot=>{
+    const data = snapshot.val()||{};
+    lista.innerHTML='';
+    for(let key in data){
+      const n=data[key];
+      const imgTag=n.imagen?`<img src="${n.imagen}">`:'';
+      lista.innerHTML+=`
+        <div class="negocio-card" data-id="${key}">
+          <div class="negocio-info">${imgTag}<div>
+            <input class="input-nombre" value="${n.nombre}"><span>Nombre</span><br>
+            <input class="input-acciones" type="number" value="${n.acciones}"><span>Acciones</span><br>
+            <input class="input-valor" type="number" value="${n.valorAccion}"><span>Valor acción</span>
+          </div></div>
+          <div>
+            <button class="btn btn-save" onclick="guardarNegocio('${key}')">✅</button>
+            <button class="btn btn-delete" onclick="eliminarNegocio('${key}')">🗑️</button>
+          </div>
+        </div>`;
     }
   });
 }
-
-window.agregarNegocio = () => {
-  const nombre = document.getElementById("nombreNegocio").value.trim();
-  const acciones = Number(document.getElementById("accionesNegocio").value);
-  const imagen = document.getElementById("imagenNegocio").value.trim();
-  
-  if(!nombre || isNaN(acciones)) return alert("Nombre y acciones válidas");
-
-  const newRef = push(ref(db, 'negocios/'));
-  set(newRef, { nombre, acciones, imagen })
-    .then(() => {
-      document.getElementById("nombreNegocio").value='';
-      document.getElementById("accionesNegocio").value='';
-      document.getElementById("imagenNegocio").value='';
-    })
-    .catch(err => alert("Error al agregar negocio: "+err));
-};
-
-window.actualizarNegocio = () => {
-  const key = document.getElementById("localId").value.trim();
-  const nuevasAcciones = Number(document.getElementById("nuevoValor").value);
-  const nuevaImagen = document.getElementById("nuevaImagen").value.trim();
-  
-  if(!key || isNaN(nuevasAcciones)) return alert("ID válido y número de acciones requerido");
-  
-  const updates = { acciones: nuevasAcciones };
-  if(nuevaImagen) updates.imagen = nuevaImagen;
-  
-  update(ref(db,'negocios/'+key), updates)
-    .then(() => {
-      document.getElementById("localId").value='';
-      document.getElementById("nuevoValor").value='';
-      document.getElementById("nuevaImagen").value='';
-    })
-    .catch(err => alert("Error al actualizar: "+err));
-};
-
-actualizarLista();
-
-// Tabs
-const tabs = document.querySelectorAll('.tab');
-const panels = document.querySelectorAll('.panel');
-tabs.forEach(tab => {
-  tab.addEventListener('click',()=>{
-    tabs.forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    const target = tab.dataset.tab;
-    panels.forEach(p=>p.classList.remove('active'));
-    document.getElementById(target).classList.add('active');
+window.agregarNegocio=()=>{
+  const id=document.getElementById("idNegocio").value.trim();
+  const nombre=document.getElementById("nombreNegocio").value.trim();
+  const acciones=Number(document.getElementById("accionesNegocio").value);
+  const valorAccion=Number(document.getElementById("valorAccion").value);
+  const imagen=document.getElementById("imagenNegocio").value.trim();
+  if(!id||!nombre||isNaN(acciones)||isNaN(valorAccion)) return alert("ID, nombre, acciones y valor válidos");
+  set(ref(db,'negocios/'+id),{nombre,acciones,valorAccion,imagen}).then(()=>{
+    document.getElementById("idNegocio").value=''; document.getElementById("nombreNegocio").value='';
+    document.getElementById("accionesNegocio").value=''; document.getElementById("valorAccion").value='';
+    document.getElementById("imagenNegocio").value=''; showPopup("✅ Negocio agregado correctamente!");
+    logAccion(`Negocio creado: ${nombre} (${id})`);
+    cargarDatos();
   });
-});
+};
+window.guardarNegocio=(key)=>{
+  const card=document.querySelector(`.negocio-card[data-id="${key}"]`);
+  const nombre=card.querySelector(".input-nombre").value;
+  const acciones=Number(card.querySelector(".input-acciones").value);
+  const valorAccion=Number(card.querySelector(".input-valor").value);
+  update(ref(db,'negocios/'+key),{nombre,acciones,valorAccion}).then(()=>{
+    showPopup("✏️ Negocio actualizado!"); logAccion(`Negocio editado: ${nombre} (${key})`);
+    cargarDatos();
+  });
+};
+window.eliminarNegocio=(key)=>{
+  if(!confirm("¿Seguro que quieres eliminar este negocio?")) return;
+  remove(ref(db,'negocios/'+key)).then(()=>{showPopup("🗑️ Negocio eliminado!"); logAccion(`Negocio eliminado: ${key}`); cargarDatos();});
+};
+
+// ------------------ CLIENTES ------------------
+function actualizarClientes(){
+  const lista=document.getElementById("listaClientes");
+  onValue(ref(db,'clientes/'), snapshot=>{
+    const data = snapshot.val()||{};
+    clientesData=data;
+    lista.innerHTML='';
+    for(let k in data){
+      const c=data[k]; const img=c.imagen?`<img src="${c.imagen}">`:''; const acciones=c.acciones||{};
+      lista.innerHTML+=`<div class="cliente-card">
+        <div class="cliente-info">${img} <strong>${c.nombre}</strong> - Acciones: ${JSON.stringify(acciones)}</div>
+        <div>
+          <button class="btn btn-save" onclick="editarCliente('${k}')">✏️</button>
+          <button class="btn btn-delete" onclick="eliminarCliente('${k}')">🗑️</button>
+        </div>
+      </div>`;
+    }
+  });
+}
+window.agregarCliente=()=>{
+  const nombre=document.getElementById("nombreCliente").value.trim();
+  const imagen=document.getElementById("imagenCliente").value.trim();
+  if(!nombre) return alert("Nombre obligatorio");
+  const newRef=push(ref(db,'clientes/'));
+  set(newRef,{nombre,imagen}).then(()=>{
+    document.getElementById("nombreCliente").value=''; document.getElementById("imagenCliente").value='';
+    showPopup("👥 Cliente agregado!"); logAccion(`Cliente creado: ${nombre}`);
+    cargarDatos();
+  });
+};
+window.editarCliente=(key)=>{
+  const nuevoNombre=prompt("Nuevo nombre del cliente:");
+  if(!nuevoNombre) return;
+  update(ref(db,'clientes/'+key),{nombre:nuevoNombre}).then(()=>{showPopup("✏️ Cliente actualizado"); logAccion(`Cliente editado: ${nuevoNombre}`); cargarDatos();});
+};
+window.eliminarCliente=(key)=>{
+  if(!confirm("¿Seguro que quieres eliminar este cliente?")) return;
+  remove(ref(db,'clientes/'+key)).then(()=>{showPopup("🗑️ Cliente eliminado"); logAccion(`Cliente eliminado: ${key}`); cargarDatos();});
+};
+
+// ------------------ LOGS ------------------
+function logAccion(mensaje){
+  const timestamp=Date.now();
+  push(ref(db,'logs/'),{mensaje,timestamp});
+  actualizarLogs();
+}
+function actualizarLogs(){
+  get(ref(db,'logs/')).then(snap=>{
+    const logs=snap.val()||{};
+    logsContent.innerHTML='';
+    Object.values(logs).sort((a,b)=>b.timestamp-a.timestamp).forEach(l=>{
+      const div=document.createElement('div'); div.innerText=`${new Date(l.timestamp).toLocaleString()}: ${l.mensaje}`;
+      logsContent.appendChild(div);
+    });
+  });
+}
+
+// ------------------ AUTOCOMPLETE Y BUSQUEDA ------------------
+function actualizarSelectBusqueda(){
+  const sC=document.getElementById("selectBusquedaCliente");
+  const sN=document.getElementById("selectBusquedaNegocio");
+  sC.innerHTML='<option value="">Selecciona un cliente</option>';
+  sN.innerHTML='<option value="">Selecciona un negocio</option>';
+  Object.keys(clientesData).forEach(k=>sC.innerHTML+=`<option value="${k}">${clientesData[k].nombre}</option>`);
+  Object.keys(negociosData).forEach(k=>sN.innerHTML+=`<option value="${k}">${negociosData[k].nombre}</option>`);
+}
+let chartAccion=null;
+function buscarSeleccion(){
+  const cId=document.getElementById("selectBusquedaCliente").value;
+  const nId=document.getElementById("selectBusquedaNegocio").value;
+  const resultado=document.getElementById("resultadoBusqueda");
+  const ctx=document.getElementById("chartAcciones").getContext("2d");
+  resultado.innerHTML='';
+  if(cId){
+    const c=clientesData[cId];
+    const img=c.imagen?`<img src="${c.imagen}">`:'';
+    resultado.innerHTML=`<div class="resultado-card"><div class="resultado-info">${img}<strong>Cliente:</strong> ${c.nombre}<br>Acciones: ${JSON.stringify(c.acciones||{})}</div></div>`;
+  }
+  if(nId){
+    const n=negociosData[nId];
+    const img=n.imagen?`<img src="${n.imagen}">`:'';
+    resultado.innerHTML=`<div class="resultado-card"><div class="resultado-info">${img}<strong>Negocio:</strong> ${n.nombre}<br>Acciones disponibles: ${n.acciones}<br>Valor acción: $${n.valorAccion}</div></div>`;
+    // transacciones
+    get(ref(db,'transacciones/')).then(snap=>{
+      const trans=snap.val()||{};
+      let transHTML='<h4>Transacciones</h4>';
+      Object.values(trans).forEach(t=>{
+        if(t.negocio===nId){
+          const cliente=clientesData[t.cliente]?clientesData[t.cliente].nombre:t.cliente;
+          transHTML+=`<div>${new Date(t.fecha).toLocaleString()}: ${t.tipo} ${t.cantidad} acciones a ${cliente} (Total: $${t.precioTotal})</div>`;
+        }
+      });
+      resultado.innerHTML+=`<div style="margin-top:10px;">${transHTML}</div>`;
+    });
+    // gráfico
+    get(ref(db,'negocios/'+nId+'/valorHistorial/')).then(snap=>{
+      const data=snap.val()||{};
+      const labels=Object.keys(data).sort();
+      const valores=labels.map(l=>data[l]);
+      if(chartAccion) chartAccion.destroy();
+      chartAccion=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Valor acción',data:valores,borderColor:'#00ff99',backgroundColor:'#00ff0099'}]},options:{}});
+    });
+  }
+}
+
+// ------------------ TRANSACCIONES ------------------
+function actualizarSelectTrans(){
+  const sN=document.getElementById("selectNegocioTrans");
+  const sC=document.getElementById("selectClienteTrans");
+  sN.innerHTML=''; sC.innerHTML='';
+  Object.keys(negociosData).forEach(k=>{const n=negociosData[k]; sN.innerHTML+=`<option value="${k}">${n.nombre}</option>`;});
+  Object.keys(clientesData).forEach(k=>{const c=clientesData[k]; sC.innerHTML+=`<option value="${k}">${c.nombre}</option>`;});
+}
+window.realizarTransaccion=()=>{
+  const nId=document.getElementById("selectNegocioTrans").value;
+  const cId=document.getElementById("selectClienteTrans").value;
+  const cantidad=Number(document.getElementById("cantidadAcciones").value);
+  const tipo=document.getElementById("tipoTrans").value;
+  if(!nId||!cId||isNaN(cantidad)||cantidad<=0) return alert("Datos válidos necesarios");
+
+  const n=negociosData[nId];
+  const c=clientesData[cId];
+  const cliAcc=c.acciones||{};
+  const accionesCliente=cliAcc[nId]||0;
+  let nuevasAccionesNegocio=n.acciones;
+
+  if(tipo==='compra'){
+    if(n.acciones< cantidad) return alert("No hay suficientes acciones disponibles en la empresa");
+    cliAcc[nId]=accionesCliente+cantidad;
+    nuevasAccionesNegocio-=cantidad;
+  } else {
+    if(accionesCliente< cantidad) return alert("El jugador no tiene suficientes acciones para vender");
+    cliAcc[nId]=accionesCliente-cantidad;
+    nuevasAccionesNegocio+=cantidad;
+  }
+
+  set(ref(db,'clientes/'+cId+'/acciones'),cliAcc);
+  update(ref(db,'negocios/'+nId),{acciones:nuevasAccionesNegocio});
+  const precioTotal=cantidad*n.valorAccion;
+  push(ref(db,'transacciones/'),{negocio:nId,cliente:cId,cantidad,tipo,precioTotal,fecha:Date.now()});
+  showPopup(`💱 ${tipo==='compra'?'Paga':'Recibe'} $${precioTotal}`);
+  document.getElementById("cantidadAcciones").value='';
+  cargarDatos();
+};
+
+// ------------------ TABS ------------------
+const tabs=document.querySelectorAll('.tab'); const panels=document.querySelectorAll('.panel');
+tabs.forEach(tab=>{tab.addEventListener('click',()=>{
+  tabs.forEach(t=>t.classList.remove('active')); tab.classList.add('active');
+  const target=tab.dataset.tab; panels.forEach(p=>p.classList.remove('active')); document.getElementById(target).classList.add('active');
+});});
+
+setInterval(cargarDatos,5000);
 </script>
 </body>
 </html>
-
-
-
