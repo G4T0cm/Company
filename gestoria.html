@@ -159,12 +159,13 @@ button:hover {transform:translateY(-2px);box-shadow:0 0 10px var(--accent-green)
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// Config Firebase (tuya)
+// Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAVJ5PrfRQpjPfgVXvlXGTrlaNLckaRY6U",
   authDomain: "reaganbroscompany.firebaseapp.com",
+  databaseURL: "https://reaganbroscompany-default-rtdb.firebaseio.com", // <- importante
   projectId: "reaganbroscompany",
   storageBucket: "reaganbroscompany.firebasestorage.app",
   messagingSenderId: "792852543624",
@@ -189,32 +190,44 @@ function actualizarLista() {
 }
 
 window.agregarNegocio = () => {
-  const nombre = document.getElementById("nombreNegocio").value;
+  const nombre = document.getElementById("nombreNegocio").value.trim();
   const acciones = Number(document.getElementById("accionesNegocio").value);
-  const imagen = document.getElementById("imagenNegocio").value;
+  const imagen = document.getElementById("imagenNegocio").value.trim();
+  
   if(!nombre || isNaN(acciones)) return alert("Nombre y acciones válidas");
-  const key = nombre.toLowerCase().replace(/\s+/g,'-');
-  set(ref(db,'negocios/'+key),{nombre,acciones,imagen});
-  document.getElementById("nombreNegocio").value='';
-  document.getElementById("accionesNegocio").value='';
-  document.getElementById("imagenNegocio").value='';
+
+  const newRef = push(ref(db, 'negocios/'));
+  set(newRef, { nombre, acciones, imagen })
+    .then(() => {
+      document.getElementById("nombreNegocio").value='';
+      document.getElementById("accionesNegocio").value='';
+      document.getElementById("imagenNegocio").value='';
+    })
+    .catch(err => alert("Error al agregar negocio: "+err));
 };
 
 window.actualizarNegocio = () => {
-  const key = document.getElementById("localId").value;
+  const key = document.getElementById("localId").value.trim();
   const nuevasAcciones = Number(document.getElementById("nuevoValor").value);
-  const nuevaImagen = document.getElementById("nuevaImagen").value;
+  const nuevaImagen = document.getElementById("nuevaImagen").value.trim();
+  
   if(!key || isNaN(nuevasAcciones)) return alert("ID válido y número de acciones requerido");
-  const updates = {acciones:nuevasAcciones};
+  
+  const updates = { acciones: nuevasAcciones };
   if(nuevaImagen) updates.imagen = nuevaImagen;
-  update(ref(db,'negocios/'+key),updates);
-  document.getElementById("localId").value='';
-  document.getElementById("nuevoValor").value='';
-  document.getElementById("nuevaImagen").value='';
+  
+  update(ref(db,'negocios/'+key), updates)
+    .then(() => {
+      document.getElementById("localId").value='';
+      document.getElementById("nuevoValor").value='';
+      document.getElementById("nuevaImagen").value='';
+    })
+    .catch(err => alert("Error al actualizar: "+err));
 };
 
 actualizarLista();
 
+// Tabs
 const tabs = document.querySelectorAll('.tab');
 const panels = document.querySelectorAll('.panel');
 tabs.forEach(tab => {
