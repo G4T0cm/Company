@@ -118,6 +118,8 @@ label{display:block;margin-top:14px;font-size:.78rem;color:var(--muted);text-tra
 .anuncio-fecha{font-size:.72rem;color:var(--muted);}
 .anuncio-texto{font-size:.85rem;color:var(--text);margin-top:8px;line-height:1.6;}
 .nota-display{background:#0a0a0a;border-radius:6px;padding:10px;font-size:.82rem;color:var(--text);line-height:1.6;margin-top:8px;border-left:3px solid var(--orange);white-space:pre-wrap;}
+/* ID badge especial para clientes */
+.id-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.72rem;background:#bb88ff22;color:var(--purple);border:1px solid #bb88ff44;margin-left:6px;font-family:'Share Tech Mono',monospace;}
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px;}
 .stat-card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;}
 .stat-card .val{font-family:'Orbitron',sans-serif;font-size:1.6rem;color:var(--green);}
@@ -256,6 +258,10 @@ label{display:block;margin-top:14px;font-size:.78rem;color:var(--muted);text-tra
     <h2>👤 Agregar Cliente</h2>
     <div class="field-row">
       <div><label>Nombre</label><input id="nombreCliente" placeholder="Nombre del cliente"></div>
+      <!-- ★ NUEVO: campo ID del juego -->
+      <div><label>ID del juego (DNI)</label><input id="idCliente" placeholder="ej: RagnarLothbrok"></div>
+    </div>
+    <div class="field-row">
       <div><label>URL imagen (opcional)</label><input id="imagenCliente" placeholder="https://..."></div>
     </div>
     <label>Notas internas</label>
@@ -423,25 +429,19 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 
 let clientesData={}, negociosData={}, transaccionesData={}, logsData={}, anunciosData={}, papeleraData={};
+let logPage=0;
+const LOGS_PER_PAGE=50;
+let chartAccion=null;
 
-// --- LOGIN REAL CON FIREBASE AUTH ---
 window.login = () => {
   const email = document.getElementById("loginEmail").value.trim();
   const pass = document.getElementById("loginPass").value.trim();
   const errorBtn = document.getElementById("loginError");
-
   signInWithEmailAndPassword(auth, email, pass)
-    .then((userCredential) => {
-      // El observador onAuthStateChanged se encargará de mostrar la app
-      showPopup("🔓 Acceso concedido");
-    })
-    .catch((error) => {
-      console.error(error);
-      errorBtn.innerText = "Credenciales incorrectas o error de red.";
-    });
+    .then(() => { showPopup("🔓 Acceso concedido"); })
+    .catch((error) => { console.error(error); errorBtn.innerText = "Credenciales incorrectas o error de red."; });
 };
 
-// Observar si el usuario está logueado o no
 onAuthStateChanged(auth, (user) => {
   if (user) {
     document.getElementById("loginOverlay").style.display = "none";
@@ -453,8 +453,8 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-document.getElementById("loginPass").addEventListener("keydown", e => { 
-  if(e.key === "Enter") window.login(); 
+document.getElementById("loginPass").addEventListener("keydown", e => {
+  if(e.key === "Enter") window.login();
 });
 
 const CATS={inmobiliaria:"🏠 Inmobiliaria",transporte:"🚗 Transporte",armamento:"🔫 Armamento",
@@ -462,13 +462,9 @@ const CATS={inmobiliaria:"🏠 Inmobiliaria",transporte:"🚗 Transporte",armame
   droga:"💊 Farmacéutica",seguridad:"🛡️ Seguridad",otro:"📦 Otro"};
 const TIPOS_ANUNCIO={info:"ℹ️",alerta:"⚠️",urgente:"🚨",oferta:"💰"};
 
-
-
-// POPUP
 const popup=document.getElementById("popup");
 function showPopup(msg){popup.innerText=msg;popup.style.display="block";setTimeout(()=>popup.style.display="none",2800);}
 
-// MODAL
 window.abrirModal=(html,titulo)=>{
   document.getElementById("modalContent").innerHTML=`<h2>${titulo}</h2>${html}`;
   document.getElementById("modalOverlay").classList.add("open");
@@ -476,7 +472,6 @@ window.abrirModal=(html,titulo)=>{
 window.cerrarModal=()=>document.getElementById("modalOverlay").classList.remove("open");
 document.getElementById("modalOverlay").addEventListener("click",e=>{if(e.target.id==="modalOverlay")cerrarModal();});
 
-// HELPERS
 function fmtMoney(n){
   if(n>=1e6)return`$${(n/1e6).toFixed(2)}M`;
   if(n>=1e3)return`$${(n/1e3).toFixed(1)}K`;
@@ -488,7 +483,12 @@ function imgTag(url,fallback="🏢"){
 }
 function stockPct(d,t){if(!t)return 0;return Math.round((d/t)*100);}
 
-// LISTENERS
+// ★ Helper: muestra el ID del juego como badge si existe
+function idBadge(idJuego){
+  if(!idJuego)return'';
+  return`<span class="id-badge">🪪 ${idJuego}</span>`;
+}
+
 function iniciarListeners(){
   onValue(ref(db,"negocios/"),snap=>{negociosData=snap.val()||{};renderNegocios();renderDashboard();actualizarSelects();renderRanking();});
   onValue(ref(db,"clientes/"),snap=>{clientesData=snap.val()||{};renderClientes();renderDashboard();actualizarSelects();renderRanking();});
@@ -498,7 +498,6 @@ function iniciarListeners(){
   onValue(ref(db,"papelera/"),snap=>{papeleraData=snap.val()||{};renderPapelera();renderDashboard();});
 }
 
-// SELECTS
 function actualizarSelects(){
   const nOpts=(ph)=>{let h=`<option value="">${ph}</option>`;for(let k in negociosData)h+=`<option value="${k}">${negociosData[k].nombre}</option>`;return h;};
   const cOpts=(ph)=>{let h=`<option value="">${ph}</option>`;for(let k in clientesData)h+=`<option value="${k}">${clientesData[k].nombre}</option>`;return h;};
@@ -508,7 +507,6 @@ function actualizarSelects(){
   ["filtroTransCliente"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=cOpts("Todos los clientes");});
 }
 
-// DASHBOARD
 window.renderDashboard=function(){
   document.getElementById("statNegocios").textContent=Object.keys(negociosData).length;
   document.getElementById("statClientes").textContent=Object.keys(clientesData).length;
@@ -539,7 +537,6 @@ window.renderDashboard=function(){
   }
 };
 
-// NEGOCIOS
 window.renderNegocios=function(){
   const cont=document.getElementById("listaNegocios");
   const filtCat=document.getElementById("filtroCategoria").value;
@@ -651,7 +648,6 @@ window.abrirGraficaPrecio=async(key)=>{
   const n=negociosData[key];
   const snap=await get(ref(db,`negocios/${key}/valorHistorial/`));
   const raw=snap.val()||{};
-  // Soporta tanto formato nuevo {ts,precio} como legado {fecha:valor}
   let puntos=Object.values(raw).map(v=>{
     if(typeof v==="object"&&v.ts)return{ts:v.ts,precio:v.precio};
     return null;
@@ -672,56 +668,14 @@ window.abrirGraficaPrecio=async(key)=>{
     setTimeout(()=>{
       const ctx=document.getElementById(cid)?.getContext("2d");
       if(!ctx)return;
-      const labels=puntos.map(p=>{
-        const d=new Date(p.ts);
-        return d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
-      });
+      const labels=puntos.map(p=>{const d=new Date(p.ts);return d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});});
       const valores=puntos.map(p=>p.precio);
-      const ultimo=valores[valores.length-1];
-      const primero=valores[0];
-      const subida=ultimo>=primero;
+      const subida=valores[valores.length-1]>=valores[0];
       const color=subida?"#00ff99":"#ff3344";
-      new Chart(ctx,{
-        type:"line",
-        data:{labels,datasets:[{
-          label:"Precio acción",
-          data:valores,
-          borderColor:color,
-          backgroundColor:color+"18",
-          fill:true,
-          tension:.3,
-          pointRadius:3,
-          pointBackgroundColor:color,
-          pointBorderColor:"#000",
-          pointHoverRadius:6,
-          borderWidth:2
-        }]},
-        options:{
-          responsive:true,maintainAspectRatio:false,
-          interaction:{mode:"index",intersect:false},
-          plugins:{
-            legend:{display:false},
-            tooltip:{
-              backgroundColor:"#1a1a1a",
-              borderColor:color,borderWidth:1,
-              titleColor:"#888",bodyColor:"#f0f0f0",
-              callbacks:{label:ctx=>`  $${ctx.parsed.y.toLocaleString("es-ES")}`}
-            },
-            annotation:{
-              annotations:{
-                lineActual:{type:"line",yMin:precioActual,yMax:precioActual,
-                  borderColor:"#ff993388",borderWidth:1,borderDash:[4,4],
-                  label:{content:`Actual: ${fmtMoney(precioActual)}`,enabled:true,
-                    position:"end",color:"#ff9933",font:{size:10}}}
-              }
-            }
-          },
-          scales:{
-            x:{ticks:{color:"#666",maxRotation:45,font:{size:10}},grid:{color:"#ffffff0a"}},
-            y:{ticks:{color:"#888",callback:v=>`$${v.toLocaleString("es-ES")}`},grid:{color:"#ffffff11"}}
-          }
-        }
-      });
+      new Chart(ctx,{type:"line",data:{labels,datasets:[{label:"Precio acción",data:valores,borderColor:color,backgroundColor:color+"18",fill:true,tension:.3,pointRadius:3,pointBackgroundColor:color,pointBorderColor:"#000",pointHoverRadius:6,borderWidth:2}]},
+        options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+          plugins:{legend:{display:false},tooltip:{backgroundColor:"#1a1a1a",borderColor:color,borderWidth:1,titleColor:"#888",bodyColor:"#f0f0f0",callbacks:{label:ctx=>`  $${ctx.parsed.y.toLocaleString("es-ES")}`}}},
+          scales:{x:{ticks:{color:"#666",maxRotation:45,font:{size:10}},grid:{color:"#ffffff0a"}},y:{ticks:{color:"#888",callback:v=>`$${v.toLocaleString("es-ES")}`},grid:{color:"#ffffff11"}}}}});
     },80);
   }
 };
@@ -734,11 +688,13 @@ window.eliminarNegocio=(key)=>{
   });
 };
 
-// CLIENTES
+// ══════════════════════════════════════════
+// CLIENTES — con campo ID del juego
+// ══════════════════════════════════════════
 window.renderClientes=function(){
   const cont=document.getElementById("listaClientes");
   const busq=(document.getElementById("buscadorClientes").value||"").toLowerCase();
-  const clis=Object.entries(clientesData).filter(([k,c])=>!busq||c.nombre.toLowerCase().includes(busq));
+  const clis=Object.entries(clientesData).filter(([k,c])=>!busq||c.nombre.toLowerCase().includes(busq)||(c.idJuego||"").toLowerCase().includes(busq));
   if(!clis.length){cont.innerHTML='<div class="empty"><span>👥</span>No hay clientes</div>';return;}
   cont.innerHTML='';
   clis.forEach(([k,c])=>{
@@ -751,7 +707,8 @@ window.renderClientes=function(){
     if(!holdingsHTML)holdingsHTML='<div style="color:var(--muted);padding:8px 0;">Sin acciones</div>';
     cont.innerHTML+=`<div class="card" id="card-cli-${k}">
       <div class="card-header">${imgTag(c.imagen,"👤")}
-        <div><div class="card-title">${c.nombre}</div>
+        <div>
+          <div class="card-title">${c.nombre}${idBadge(c.idJuego)}</div>
           <div class="card-sub">${totalAcc} acciones · Valor: ${fmtMoney(totalValor)}</div>
         </div>
         <div class="card-actions">
@@ -764,6 +721,7 @@ window.renderClientes=function(){
         <div class="holdings-list">${holdingsHTML}</div>
         <div class="card-inputs" style="margin-top:12px;">
           <div><label>Nombre</label><input class="edit-nombre" value="${c.nombre}"></div>
+          <div><label>ID del juego (DNI)</label><input class="edit-idjuego" value="${c.idJuego||''}" placeholder="ej: RagnarLothbrok"></div>
           <div><label>URL imagen</label><input class="edit-imagen" value="${c.imagen||''}"></div>
         </div>
         <label>Notas internas</label>
@@ -776,13 +734,14 @@ window.renderClientes=function(){
 
 window.agregarCliente=()=>{
   const nombre=document.getElementById("nombreCliente").value.trim();
+  const idJuego=document.getElementById("idCliente").value.trim();  // ★ NUEVO
   const imagen=document.getElementById("imagenCliente").value.trim();
   const notas=document.getElementById("notasCliente").value.trim();
   if(!nombre)return alert("Nombre obligatorio");
   const r=push(ref(db,"clientes/"));
-  set(r,{nombre,imagen,notas}).then(()=>{
-    ["nombreCliente","imagenCliente","notasCliente"].forEach(i=>document.getElementById(i).value="");
-    showPopup("👥 Cliente agregado!");logAccion(`Cliente creado: ${nombre}`,"cliente",null,r.key);
+  set(r,{nombre,idJuego,imagen,notas}).then(()=>{
+    ["nombreCliente","idCliente","imagenCliente","notasCliente"].forEach(i=>document.getElementById(i).value="");
+    showPopup("👥 Cliente agregado!");logAccion(`Cliente creado: ${nombre}${idJuego?" ("+idJuego+")":""}`, "cliente",null,r.key);
   });
 };
 
@@ -790,6 +749,7 @@ window.guardarCliente=(key)=>{
   const c=document.getElementById("card-cli-"+key);
   update(ref(db,"clientes/"+key),{
     nombre:c.querySelector(".edit-nombre").value,
+    idJuego:c.querySelector(".edit-idjuego").value,   // ★ NUEVO
     imagen:c.querySelector(".edit-imagen").value,
     notas:c.querySelector(".edit-notas").value
   }).then(()=>{showPopup("✏️ Cliente actualizado");logAccion(`Cliente editado: ${c.querySelector(".edit-nombre").value}`,"cliente",null,key);});
@@ -803,7 +763,6 @@ window.eliminarCliente=(key)=>{
   });
 };
 
-// TRANSACCIONES
 window.checkLimite=function(){
   const nId=document.getElementById("selectNegocioTrans").value;
   const cId=document.getElementById("selectClienteTrans").value;
@@ -833,7 +792,7 @@ window.previewTransaccion=function(){
   const acc=(c.acciones||{})[nId]||0;
   document.getElementById("transPreviewData").innerHTML=`
     <div class="info-item"><div class="key">Negocio</div><div class="val">${n.nombre}</div></div>
-    <div class="info-item"><div class="key">Cliente</div><div class="val">${c.nombre}</div></div>
+    <div class="info-item"><div class="key">Cliente</div><div class="val">${c.nombre}${c.idJuego?` <span class="id-badge">🪪 ${c.idJuego}</span>`:''}</div></div>
     <div class="info-item"><div class="key">Tipo</div><div class="val">${tipo==="compra"?"🟢 Compra":"🔴 Venta"}</div></div>
     <div class="info-item"><div class="key">Precio total</div><div class="val">${fmtMoney(precio)}</div></div>
     <div class="info-item"><div class="key">Acc. cliente → después</div><div class="val">${acc} → ${tipo==="compra"?acc+cantidad:acc-cantidad}</div></div>
@@ -867,7 +826,7 @@ window.realizarTransaccion=()=>{
   update(ref(db),updates).then(()=>{
     push(ref(db,"transacciones/"),{negocio:nId,cliente:cId,cantidad,tipo,precioTotal,fecha:Date.now()});
     showPopup(`💱 ${tipo==="compra"?`${c.nombre} paga ${fmtMoney(precioTotal)}`:`${c.nombre} recibe ${fmtMoney(precioTotal)}`}`);
-    logAccion(`${tipo==="compra"?"Compra":"Venta"}: ${c.nombre} ${tipo==="compra"?"compró":"vendió"} ${cantidad} acc. de ${n.nombre} (${fmtMoney(precioTotal)})`,"transaccion",nId,cId);
+    logAccion(`${tipo==="compra"?"Compra":"Venta"}: ${c.nombre}${c.idJuego?" ("+c.idJuego+")":""} ${tipo==="compra"?"compró":"vendió"} ${cantidad} acc. de ${n.nombre} (${fmtMoney(precioTotal)})`,"transaccion",nId,cId);
     document.getElementById("cantidadAcciones").value="";document.getElementById("transPreview").style.display="none";
   });
 };
@@ -884,9 +843,11 @@ window.renderTransacciones=function(){
   let html=`<table class="trans-table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Negocio</th><th>Cliente</th><th>Cant.</th><th>Total</th></tr></thead><tbody>`;
   trans.forEach(t=>{
     const n=negociosData[t.negocio]?.nombre||t.negocio;
-    const c=clientesData[t.cliente]?.nombre||t.cliente;
+    const cli=clientesData[t.cliente];
+    const cNombre=cli?.nombre||t.cliente;
+    const cId=cli?.idJuego?`<span class="id-badge">🪪 ${cli.idJuego}</span>`:'';
     const badge=t.tipo==="compra"?'<span class="badge badge-green">COMPRA</span>':'<span class="badge badge-red">VENTA</span>';
-    html+=`<tr><td>${new Date(t.fecha).toLocaleString("es-ES")}</td><td>${badge}</td><td>${n}</td><td>${c}</td><td>${t.cantidad}</td><td>${fmtMoney(t.precioTotal)}</td></tr>`;
+    html+=`<tr><td>${new Date(t.fecha).toLocaleString("es-ES")}</td><td>${badge}</td><td>${n}</td><td>${cNombre} ${cId}</td><td>${t.cantidad}</td><td>${fmtMoney(t.precioTotal)}</td></tr>`;
   });
   cont.innerHTML=html+"</tbody></table>";
 };
@@ -898,11 +859,13 @@ window.exportarCSV=function(){
   const trans=Object.values(transaccionesData)
     .filter(t=>(!fN||t.negocio===fN)&&(!fC||t.cliente===fC)&&(!fT||t.tipo===fT))
     .sort((a,b)=>b.fecha-a.fecha);
-  let csv="Fecha,Tipo,Negocio,Cliente,Cantidad,Precio Total\n";
+  let csv="Fecha,Tipo,Negocio,Cliente,ID Juego,Cantidad,Precio Total\n";
   trans.forEach(t=>{
     const n=negociosData[t.negocio]?.nombre||t.negocio;
-    const c=clientesData[t.cliente]?.nombre||t.cliente;
-    csv+=`"${new Date(t.fecha).toLocaleString("es-ES")}","${t.tipo}","${n}","${c}",${t.cantidad},${t.precioTotal}\n`;
+    const cli=clientesData[t.cliente];
+    const c=cli?.nombre||t.cliente;
+    const idJ=cli?.idJuego||'';
+    csv+=`"${new Date(t.fecha).toLocaleString("es-ES")}","${t.tipo}","${n}","${c}","${idJ}",${t.cantidad},${t.precioTotal}\n`;
   });
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
@@ -910,7 +873,9 @@ window.exportarCSV=function(){
   a.click();showPopup("📥 CSV exportado!");
 };
 
-// BUSCAR
+// ══════════════════════════════════════════
+// BUSCAR — muestra ID del juego en resultados
+// ══════════════════════════════════════════
 window.buscarSeleccion=function(){
   const cId=document.getElementById("selectBusquedaCliente").value;
   const nId=document.getElementById("selectBusquedaNegocio").value;
@@ -931,11 +896,12 @@ window.buscarSeleccion=function(){
       const badge=t.tipo==="compra"?'<span class="badge badge-green">C</span>':'<span class="badge badge-red">V</span>';
       return`<div class="holding-row">${badge} ${n} · ${t.cantidad} acc. · ${fmtMoney(t.precioTotal)} · <small style="color:var(--muted)">${new Date(t.fecha).toLocaleDateString("es-ES")}</small></div>`;
     }).join("")||'<div style="color:var(--muted);padding:8px 0;">Sin transacciones</div>';
-    cont.innerHTML+=`<div class="result-section"><h3>👤 ${c.nombre}</h3>
+    cont.innerHTML+=`<div class="result-section"><h3>👤 ${c.nombre} ${idBadge(c.idJuego)}</h3>
       ${c.notas?`<div class="nota-display">${c.notas}</div>`:''}
       <div class="info-grid">
         <div class="info-item"><div class="key">Valor total cartera</div><div class="val">${fmtMoney(totalValor)}</div></div>
         <div class="info-item"><div class="key">Negocios en cartera</div><div class="val">${Object.values(acciones).filter(v=>v>0).length}</div></div>
+        ${c.idJuego?`<div class="info-item"><div class="key">ID del juego</div><div class="val" style="color:var(--purple)">${c.idJuego}</div></div>`:''}
       </div>
       <div style="margin-top:12px;"><div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;">ACCIONES POR NEGOCIO</div><div class="holdings-list">${holdingsHTML}</div></div>
       <div style="margin-top:12px;"><div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;">ÚLTIMAS TRANSACCIONES</div><div class="holdings-list">${transHTML}</div></div>
@@ -946,15 +912,19 @@ window.buscarSeleccion=function(){
     const total=n.accionesTotales||n.acciones;const pct=stockPct(n.acciones,total);
     let shareholders=[];
     for(let cId2 in clientesData){const c=clientesData[cId2];const acc=(c.acciones||{})[nId]||0;
-      if(acc>0)shareholders.push({nombre:c.nombre,acc,valor:acc*n.valorAccion,pct:Math.round(acc/total*100)});}
+      if(acc>0)shareholders.push({nombre:c.nombre,idJuego:c.idJuego||'',acc,valor:acc*n.valorAccion,pct:Math.round(acc/total*100)});}
     shareholders.sort((a,b)=>b.acc-a.acc);
-    const shHTML=shareholders.map(s=>`<div class="holding-row"><span>${s.nombre}</span><span>${s.acc} acc. (${s.pct}%) · ${fmtMoney(s.valor)}</span></div>`).join("")
-      ||'<div style="color:var(--muted);padding:8px 0;">Sin accionistas</div>';
+    const shHTML=shareholders.map(s=>`<div class="holding-row">
+      <span>${s.nombre}${s.idJuego?` <span class="id-badge">🪪 ${s.idJuego}</span>`:''}</span>
+      <span>${s.acc} acc. (${s.pct}%) · ${fmtMoney(s.valor)}</span>
+    </div>`).join("")||'<div style="color:var(--muted);padding:8px 0;">Sin accionistas</div>';
     const transN=Object.values(transaccionesData).filter(t=>t.negocio===nId).sort((a,b)=>b.fecha-a.fecha).slice(0,10);
     const transHTML=transN.map(t=>{
-      const c=clientesData[t.cliente]?.nombre||t.cliente;
+      const cli=clientesData[t.cliente];
+      const cNombre=cli?.nombre||t.cliente;
+      const cIdB=cli?.idJuego?` <span class="id-badge">🪪 ${cli.idJuego}</span>`:'';
       const badge=t.tipo==="compra"?'<span class="badge badge-green">C</span>':'<span class="badge badge-red">V</span>';
-      return`<div class="holding-row">${badge} ${c} · ${t.cantidad} acc. · ${fmtMoney(t.precioTotal)} · <small style="color:var(--muted)">${new Date(t.fecha).toLocaleDateString("es-ES")}</small></div>`;
+      return`<div class="holding-row">${badge} ${cNombre}${cIdB} · ${t.cantidad} acc. · ${fmtMoney(t.precioTotal)} · <small style="color:var(--muted)">${new Date(t.fecha).toLocaleDateString("es-ES")}</small></div>`;
     }).join("")||'<div style="color:var(--muted);padding:8px 0;">Sin transacciones</div>';
     cont.innerHTML+=`<div class="result-section"><h3>🏢 ${n.nombre}${n.categoria?` <span class="cat-pill">${CATS[n.categoria]||n.categoria}</span>`:''}</h3>
       ${n.notas?`<div class="nota-display">${n.notas}</div>`:''}
@@ -978,26 +948,13 @@ window.buscarSeleccion=function(){
         if(chartAccion)chartAccion.destroy();
         const labels=puntos.map(p=>{const d=new Date(p.ts);return d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});});
         const valores=puntos.map(p=>p.precio);
-        const precioActual=n.valorAccion;
         const ultimo=valores[valores.length-1];
         const color=ultimo>=(valores[0]||0)?"#00ff99":"#ff3344";
         chartAccion=new Chart(document.getElementById("chartAcciones").getContext("2d"),{
-          type:"line",
-          data:{labels,datasets:[{label:"Precio acción",data:valores,borderColor:color,
-            backgroundColor:color+"18",fill:true,tension:.3,pointRadius:3,
-            pointBackgroundColor:color,borderWidth:2}]},
-          options:{responsive:true,maintainAspectRatio:false,
-            interaction:{mode:"index",intersect:false},
-            plugins:{
-              legend:{display:false},
-              tooltip:{backgroundColor:"#1a1a1a",borderColor:color,borderWidth:1,
-                titleColor:"#888",bodyColor:"#f0f0f0",
-                callbacks:{label:c=>`  $${c.parsed.y.toLocaleString("es-ES")}`}}
-            },
-            scales:{
-              x:{ticks:{color:"#666",maxRotation:45,font:{size:10}},grid:{color:"#ffffff0a"}},
-              y:{ticks:{color:"#888",callback:v=>`$${v.toLocaleString("es-ES")}`},grid:{color:"#ffffff11"}}
-            }}});
+          type:"line",data:{labels,datasets:[{label:"Precio acción",data:valores,borderColor:color,backgroundColor:color+"18",fill:true,tension:.3,pointRadius:3,pointBackgroundColor:color,borderWidth:2}]},
+          options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+            plugins:{legend:{display:false},tooltip:{backgroundColor:"#1a1a1a",borderColor:color,borderWidth:1,titleColor:"#888",bodyColor:"#f0f0f0",callbacks:{label:c=>`  $${c.parsed.y.toLocaleString("es-ES")}`}}},
+            scales:{x:{ticks:{color:"#666",maxRotation:45,font:{size:10}},grid:{color:"#ffffff0a"}},y:{ticks:{color:"#888",callback:v=>`$${v.toLocaleString("es-ES")}`},grid:{color:"#ffffff11"}}}}});
       }
     });
   }
@@ -1009,7 +966,6 @@ window.limpiarBusqueda=function(){
   document.getElementById("chartContainer").style.display="none";
 };
 
-// RANKING
 window.renderRanking=function(){
   const cont=document.getElementById("rankingContainer");
   const filtroN=document.getElementById("rankingFiltroNegocio").value;
@@ -1019,7 +975,7 @@ window.renderRanking=function(){
     let totalAcc=0,totalValor=0,numNegocios=0;
     for(let nId in acciones){if(!filtroN||nId===filtroN){const qty=acciones[nId]||0;const n=negociosData[nId];
       totalAcc+=qty;if(n)totalValor+=qty*n.valorAccion;if(qty>0)numNegocios++;}}
-    return{key:k,nombre:c.nombre,imagen:c.imagen,totalAcc,totalValor,numNegocios};
+    return{key:k,nombre:c.nombre,idJuego:c.idJuego||'',imagen:c.imagen,totalAcc,totalValor,numNegocios};
   }).filter(r=>r.totalAcc>0);
   if(orden==="valor")ranking.sort((a,b)=>b.totalValor-a.totalValor);
   else if(orden==="cantidad")ranking.sort((a,b)=>b.totalAcc-a.totalAcc);
@@ -1029,13 +985,13 @@ window.renderRanking=function(){
     const nc=i===0?"gold":i===1?"silver":i===2?"bronze":"";
     const img=r.imagen?`<img class="card-img" src="${r.imagen}" style="width:40px;height:40px;" onerror="this.style.display='none'">`:`<div class="card-img-placeholder" style="width:40px;height:40px;font-size:1rem;">👤</div>`;
     return`<div class="rank-row">${img}<div class="rank-num ${nc}">${i+1}</div>
-      <div class="rank-info"><div class="rank-name">${r.nombre}</div>
+      <div class="rank-info">
+        <div class="rank-name">${r.nombre}${r.idJuego?` <span class="id-badge">🪪 ${r.idJuego}</span>`:''}</div>
         <div class="rank-detail">${r.totalAcc} acc. · ${r.numNegocios} negocio${r.numNegocios!==1?"s":""}</div>
       </div><div class="rank-val">${fmtMoney(r.totalValor)}</div></div>`;
   }).join("");
 };
 
-// ANUNCIOS
 window.publicarAnuncio=()=>{
   const titulo=document.getElementById("anuncioTitulo").value.trim();
   const texto=document.getElementById("anuncioTexto").value.trim();
@@ -1062,7 +1018,6 @@ window.renderAnuncios=function(){
 };
 window.eliminarAnuncio=(key)=>remove(ref(db,"anuncios/"+key)).then(()=>showPopup("🗑️ Anuncio eliminado"));
 
-// PAPELERA
 window.renderPapelera=function(){
   const negItems=papeleraData.negocios?Object.entries(papeleraData.negocios):[];
   const cliItems=papeleraData.clientes?Object.entries(papeleraData.clientes):[];
@@ -1079,7 +1034,7 @@ window.renderPapelera=function(){
   document.getElementById("papeleraCli").innerHTML=!cliItems.length
     ?'<div class="empty"><span>✅</span>Sin clientes eliminados</div>'
     :cliItems.map(([k,c])=>`<div class="trash-card">
-      <div><div class="trash-name">👤 ${c.nombre}</div>
+      <div><div class="trash-name">👤 ${c.nombre}${c.idJuego?` <span class="id-badge">🪪 ${c.idJuego}</span>`:''}</div>
         <div class="trash-meta">Eliminado: ${new Date(c._fechaEliminado).toLocaleString("es-ES")}</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -1099,7 +1054,6 @@ window.eliminarDefNeg=(key)=>{if(!confirm("¿Eliminar definitivamente?"))return;
 window.eliminarDefCli=(key)=>{if(!confirm("¿Eliminar definitivamente?"))return;remove(ref(db,"papelera/clientes/"+key)).then(()=>showPopup("💀 Eliminado"));};
 window.vaciarPapelera=()=>{if(!confirm("¿Vaciar toda la papelera?"))return;remove(ref(db,"papelera/")).then(()=>showPopup("🗑️ Papelera vaciada"));};
 
-// LOGS
 function logAccion(mensaje,tipo="general",negocioId=null,clienteId=null){
   push(ref(db,"logs/"),{mensaje,tipo,negocioId,clienteId,timestamp:Date.now()});
 }
@@ -1133,7 +1087,6 @@ window.renderLogs=function(){
 window.cambiarPagLog=(dir)=>{logPage=Math.max(0,logPage+dir);renderLogs();};
 window.limpiarLogs=()=>{if(!confirm("¿Eliminar TODOS los logs?"))return;remove(ref(db,"logs/")).then(()=>showPopup("🗑️ Logs eliminados"));};
 
-// TOGGLE & TABS
 window.toggleCard=(id)=>{const c=document.getElementById(id);if(c)c.classList.toggle("expanded");};
 document.querySelectorAll(".tab").forEach(tab=>{
   tab.addEventListener("click",()=>{
