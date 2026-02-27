@@ -1,21 +1,52 @@
 const admin = require("firebase-admin");
 
+// fetch compatible con Node 18
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+
+const DISCORD_WEBHOOK_URL =
+  "https://discord.com/api/webhooks/1476990460063912181/GFqpqUYq-KgfEdUAxlC7HlCufitcUCzIYBN2Y_kVDKxwP0phh0ck2GOLbL3vviSSAXJf";
+
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 const databaseURL = process.env.FIREBASE_DATABASE_URL;
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: databaseURL,
+  databaseURL,
 });
 
 const db = admin.database();
 
 const VOL_CONFIG_PATH = "volatilidad/config";
-const VOL_LOG_PATH = "volatilidad/log";
+
+async function enviarADiscord(detalle, subidas, bajadas, ts) {
+  const lines = detalle.slice(0, 20).map(d =>
+    `${d.sube ? "🟢" : "🔴"} **${d.negocio}**  
+${d.anterior} → **${d.nuevo}** (${d.sube ? "+" : "-"}${d.pct}%)`
+  );
+
+  await fetch(DISCORD_WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: "📈 Volatilidad",
+      embeds: [
+        {
+          title: "Cambios de volatilidad aplicados",
+          description: lines.join("\n"),
+          color: subidas >= bajadas ? 0x2ecc71 : 0xe74c3c,
+          footer: {
+            text: `▲ ${subidas} subidas · ▼ ${bajadas} bajadas`,
+          },
+          timestamp: new Date(ts).toISOString(),
+        },
+      ],
+    }),
+  });
+}
 
 async function aplicarVolatilidad() {
   try {
-    // Leer configuración
     const cfgSnap = await db.ref(VOL_CONFIG_PATH).once("value");
     const cfg = cfgSnap.val() || { activo: true, min: 1, max: 5, precioMin: 100 };
 
@@ -24,7 +55,6 @@ async function aplicarVolatilidad() {
       process.exit(0);
     }
 
-    // Leer negocios
     const negSnap = await db.ref("negocios").once("value");
     if (!negSnap.exists()) {
       console.log("No hay negocios.");
@@ -33,7 +63,7 @@ async function aplicarVolatilidad() {
 
     const negocios = negSnap.val();
     const ahora = Date.now();
-    // CLAVE: todas las rutas son absolutas desde la raíz de la DB
+
     const updates = {};
     let subidas = 0, bajadas = 0;
     const detalle = [];
@@ -46,54 +76,45 @@ async function aplicarVolatilidad() {
       const rango = (cfg.max || 5) - (cfg.min || 1);
       const pct = (Math.random() * rango + (cfg.min || 1)) / 100;
       const sube = Math.random() >= 0.5;
-      const precioActual = neg.valorAccion;
 
+      const precioActual = neg.valorAccion;
       let nuevoPrecio = sube
         ? precioActual * (1 + pct)
         : precioActual * (1 - pct);
 
       nuevoPrecio = Math.max(cfg.precioMin || 100, Math.round(nuevoPrecio));
 
-      // Ruta absoluta desde la raíz
       updates[`negocios/${id}/valorAccion`] = nuevoPrecio;
 
-      // Nuevo nodo en historial con push key manual
       const histKey = db.ref().push().key;
       updates[`negocios/${id}/valorHistorial/${histKey}`] = {
         ts: ahora,
         precio: nuevoPrecio,
       };
 
-      if (sube) subidas++; else bajadas++;
+      if (sube) subidas++;
+      else bajadas++;
+
       detalle.push({
         negocio: neg.nombre,
         anterior: precioActual,
         nuevo: nuevoPrecio,
         sube,
         pct: Math.round(pct * 10000) / 100,
-        ts: ahora,
       });
     }
 
     if (!Object.keys(updates).length) {
-      console.log("Sin negocios activos para procesar.");
+      console.log("Sin negocios activos.");
       process.exit(0);
     }
 
-    // Un solo update atómico desde la raíz
     await db.ref().update(updates);
 
-    // Log global
-    const logKey = db.ref().push().key;
-    await db.ref(`${VOL_LOG_PATH}/${logKey}`).set({
-      ts: ahora,
-      subidas,
-      bajadas,
-      negocios: detalle.length,
-      detalle,
-    });
+    // 🔔 ENVIAR A DISCORD
+    await enviarADiscord(detalle, subidas, bajadas, ahora);
 
-    console.log(`✅ Volatilidad aplicada: ${subidas} ▲ subidas · ${bajadas} ▼ bajadas`);
+    console.log(`✅ Volatilidad aplicada y enviada a Discord`);
     process.exit(0);
   } catch (err) {
     console.error("❌ Error:", err);
