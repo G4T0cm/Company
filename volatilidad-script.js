@@ -33,7 +33,7 @@ async function aplicarVolatilidad() {
 
     const negocios = negSnap.val();
     const ahora = Date.now();
-
+    // CLAVE: todas las rutas son absolutas desde la raíz de la DB
     const updates = {};
     let subidas = 0, bajadas = 0;
     const detalle = [];
@@ -54,10 +54,10 @@ async function aplicarVolatilidad() {
 
       nuevoPrecio = Math.max(cfg.precioMin || 100, Math.round(nuevoPrecio));
 
-      // Actualizar precio en batch
+      // Ruta absoluta desde la raíz
       updates[`negocios/${id}/valorAccion`] = nuevoPrecio;
 
-      // Historial individual por negocio
+      // Nuevo nodo en historial con push key manual
       const histKey = db.ref().push().key;
       updates[`negocios/${id}/valorHistorial/${histKey}`] = {
         ts: ahora,
@@ -80,17 +80,18 @@ async function aplicarVolatilidad() {
       process.exit(0);
     }
 
-    // Actualizar todos los precios de golpe
+    // Un solo update atómico desde la raíz
     await db.ref().update(updates);
 
-    // Log independiente en formato push compatible HTML
-    const logRef = db.ref(VOL_LOG_PATH).push();
-    await logRef.set({ ts: ahora, subidas, bajadas, negocios: detalle.length });
-
-    // Cada negocio como push individual dentro de detalle
-    for (const entrada of detalle) {
-      await logRef.child('detalle').push().set(entrada);
-    }
+    // Log global
+    const logKey = db.ref().push().key;
+    await db.ref(`${VOL_LOG_PATH}/${logKey}`).set({
+      ts: ahora,
+      subidas,
+      bajadas,
+      negocios: detalle.length,
+      detalle,
+    });
 
     console.log(`✅ Volatilidad aplicada: ${subidas} ▲ subidas · ${bajadas} ▼ bajadas`);
     process.exit(0);
