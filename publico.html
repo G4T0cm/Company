@@ -45,7 +45,6 @@ header{text-align:center;padding:24px 0 16px;}
 .ticker-price{color:var(--text);}
 .ticker-sep{color:var(--muted);}
 
-/* STATS — 2 columnas en móvil, 4 en desktop */
 .stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
 @media(min-width:600px){.stats-row{grid-template-columns:repeat(4,1fr);}}
 .stat{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px 8px;text-align:center;position:relative;overflow:hidden;}
@@ -56,7 +55,6 @@ header{text-align:center;padding:24px 0 16px;}
 .section-title{font-family:'Orbitron',sans-serif;font-size:clamp(.9rem,2.5vw,1rem);color:var(--blue);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
 .section-title::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
 
-/* GRID — 1 columna móvil, auto en desktop */
 .grid{display:grid;grid-template-columns:1fr;gap:14px;}
 @media(min-width:600px){.grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));}}
 
@@ -74,7 +72,6 @@ header{text-align:center;padding:24px 0 16px;}
 .badge-mid{background:#ff993315;color:var(--orange);border:1px solid #ff993340;}
 .badge-low{background:#ff335515;color:var(--red);border:1px solid #ff335540;}
 
-/* PRECIO — el más importante, bien grande */
 .price-display{display:flex;align-items:flex-end;gap:8px;margin-bottom:14px;}
 .price-big{font-family:'Orbitron',sans-serif;font-size:clamp(2.4rem,7vw,2.6rem);font-weight:900;color:var(--green);}
 .price-unit{font-size:clamp(.88rem,2vw,.95rem);color:var(--muted);margin-bottom:10px;}
@@ -102,6 +99,12 @@ header{text-align:center;padding:24px 0 16px;}
 .chart-delta.up{color:var(--green);}
 .chart-delta.down{color:var(--red);}
 .chart-delta.flat{color:var(--muted);}
+
+.chart-btn-group{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.chart-btn{padding:6px 12px;border-radius:4px;border:1px solid var(--border);background:#0a1520;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:clamp(.7rem,1.5vw,.75rem);cursor:pointer;transition:.2s;white-space:nowrap;}
+.chart-btn:hover{border-color:var(--green);color:var(--green);}
+.chart-btn-active{background:var(--blue);border-color:var(--blue);color:#000;font-weight:700;}
+
 .chart-wrap{position:relative;height:90px;}
 
 .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
@@ -188,6 +191,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let prevData = {};
 const cardCharts = {};
+const chartFilters = {};
 
 setInterval(() => {
   document.getElementById("clockDisplay").textContent = new Date().toLocaleTimeString('es-ES');
@@ -232,6 +236,34 @@ function updateStats(data) {
   document.getElementById("statCapMercado").textContent = fmtMoney(cap);
 }
 
+function filterPuntos(puntos, tipo) {
+  if (!puntos || puntos.length === 0) return [];
+  const ahora = Date.now();
+  let limite = 0;
+  
+  if (tipo === 'day') {
+    limite = ahora - (24 * 60 * 60 * 1000);
+  } else if (tipo === 'week') {
+    limite = ahora - (7 * 24 * 60 * 60 * 1000);
+  } else if (tipo === 'month') {
+    limite = ahora - (30 * 24 * 60 * 60 * 1000);
+  }
+  
+  return puntos.filter(p => p.ts >= limite);
+}
+
+window.updateChartFilter = function(k, tipo) {
+  chartFilters[k] = tipo;
+  const buttons = document.querySelectorAll(`button[data-chart="${k}"]`);
+  buttons.forEach(btn => btn.classList.remove('chart-btn-active'));
+  document.querySelector(`button[data-chart="${k}"][data-tipo="${tipo}"]`).classList.add('chart-btn-active');
+  
+  const n = window.negociosDataGlobal[k];
+  if (n && n.valorHistorial) {
+    updateChartSection(k, n.valorHistorial);
+  }
+};
+
 function buildOrUpdateChart(k, puntos) {
   const canvas = document.getElementById('chart-' + k);
   if (!canvas) return;
@@ -263,13 +295,22 @@ function buildOrUpdateChart(k, puntos) {
 }
 
 function updateChartSection(k, historial) {
-  const puntos = Object.values(historial || {}).map(v => (typeof v === 'object' && v.ts) ? v : null).filter(Boolean).sort((a, b) => a.ts - b.ts);
+  const allPuntos = Object.values(historial || {}).map(v => (typeof v === 'object' && v.ts) ? v : null).filter(Boolean).sort((a, b) => a.ts - b.ts);
+  const tipo = chartFilters[k] || 'day';
+  const puntos = filterPuntos(allPuntos, tipo);
+  
   const deltaEl = document.getElementById('delta-' + k);
-  if (puntos.length < 2) { if (deltaEl) { deltaEl.textContent = '—'; deltaEl.className = 'chart-delta flat'; } return; }
+  if (puntos.length < 2) { 
+    if (deltaEl) { deltaEl.textContent = '—'; deltaEl.className = 'chart-delta flat'; } 
+    return; 
+  }
   const diff = puntos[puntos.length-1].precio - puntos[0].precio;
   const pct = ((diff / puntos[0].precio) * 100).toFixed(2);
   const sign = diff >= 0 ? '+' : '';
-  if (deltaEl) { deltaEl.textContent = `${sign}${fmtMoney(diff)} (${sign}${pct}%)`; deltaEl.className = 'chart-delta ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat'); }
+  if (deltaEl) { 
+    deltaEl.textContent = `${sign}${fmtMoney(diff)} (${sign}${pct}%)`; 
+    deltaEl.className = 'chart-delta ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat'); 
+  }
   buildOrUpdateChart(k, puntos);
 }
 
@@ -338,6 +379,11 @@ function renderCards(data) {
               <span class="chart-label">📈 Historial de precio</span>
               <span class="chart-delta flat" id="delta-${k}">—</span>
             </div>
+            <div class="chart-btn-group">
+              <button class="chart-btn chart-btn-active" data-chart="${k}" data-tipo="day" onclick="updateChartFilter('${k}', 'day')">📅 Día</button>
+              <button class="chart-btn" data-chart="${k}" data-tipo="week" onclick="updateChartFilter('${k}', 'week')">📊 Semana</button>
+              <button class="chart-btn" data-chart="${k}" data-tipo="month" onclick="updateChartFilter('${k}', 'month')">📈 Mes</button>
+            </div>
             <div class="chart-wrap" id="chartwrap-${k}"><canvas id="chart-${k}"></canvas></div>
           </div>
         </div>`);
@@ -346,9 +392,12 @@ function renderCards(data) {
   });
 }
 
+window.negociosDataGlobal = {};
+
 onValue(ref(db, 'negocios/'), snapshot => {
   const raw = snapshot.val() || {};
   const data = Object.fromEntries(Object.entries(raw).filter(([k, n]) => n.estado !== 'liquidacion'));
+  window.negociosDataGlobal = data;
   renderCards(data);
   updateTicker(data);
   updateStats(data);
