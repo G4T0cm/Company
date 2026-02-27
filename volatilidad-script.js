@@ -83,15 +83,14 @@ async function aplicarVolatilidad() {
     // Actualizar todos los precios de golpe
     await db.ref().update(updates);
 
-    // Log independiente en formato push (compatible HTML)
+    // Log independiente en formato push compatible HTML
     const logRef = db.ref(VOL_LOG_PATH).push();
-    await logRef.set({
-      ts: ahora,
-      subidas,
-      bajadas,
-      negocios: detalle.length,
-      detalle,
-    });
+    await logRef.set({ ts: ahora, subidas, bajadas, negocios: detalle.length });
+
+    // Cada negocio como push individual dentro de detalle
+    for (const entrada of detalle) {
+      await logRef.child('detalle').push().set(entrada);
+    }
 
     console.log(`✅ Volatilidad aplicada: ${subidas} ▲ subidas · ${bajadas} ▼ bajadas`);
     process.exit(0);
