@@ -719,6 +719,7 @@ window.limpiarLogVol=function(){
 };
 
 function renderVolLog(){
+  console.log('📉 volLogData:', volLogData); // DEBUG para ver qué recibe
   const entries=Object.values(volLogData).sort((a,b)=>b.ts-a.ts);
   const cont=document.getElementById('volLogContainer');
   let totalSubidas=0,totalBajadas=0;
@@ -728,12 +729,16 @@ function renderVolLog(){
   document.getElementById('volStatBajadas').textContent=totalBajadas;
   document.getElementById('volStatUltimo').textContent=entries.length?
     new Date(entries[0].ts).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'—';
-  if(!entries.length){cont.innerHTML='<div class="empty"><span>📉</span>Sin ajustes registrados</div>';return;}
+  if(!entries.length){
+    cont.innerHTML='<div class="empty"><span>📉</span>Sin ajustes registrados</div>';
+    return;
+  }
   cont.innerHTML=entries.slice(0,100).map(e=>{
-    const det=(e.detalle||[]).map(d=>`
+    const detalle=e.detalle||[];
+    const det=detalle.map(d=>`
       <div class="vol-log-entry" style="padding-left:16px;border-left:2px solid ${d.sube?'#00ff9933':'#ff334433'};">
         <span class="vol-log-time">${new Date(d.ts).toLocaleTimeString('es-ES')}</span>
-        <span class="vol-log-neg">${d.neg}</span>
+        <span class="vol-log-neg">${d.negocio||d.neg}</span>
         <span class="vol-log-change ${d.sube?'up':'down'}" style="margin-left:auto;">
           ${d.sube?'▲':'▼'} ${fmtMoney(d.anterior)} → ${fmtMoney(d.nuevo)} (${d.sube?'+':''}${(d.cambio>=0?'+':'')+Math.round(d.cambio).toLocaleString('es-ES')})
         </span>
@@ -747,6 +752,7 @@ function renderVolLog(){
     </div>`;
   }).join('');
 }
+
 
 function actualizarSelects(){
   const nOpts=(ph)=>{let h=`<option value="">${ph}</option>`;for(let k in negociosData)h+=`<option value="${k}">${negociosData[k].nombre}</option>`;return h;};
@@ -1330,3 +1336,4 @@ document.querySelectorAll(".tab").forEach(tab=>{
 </script>
 </body>
 </html>
+
