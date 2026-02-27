@@ -133,37 +133,15 @@ label{display:block;margin-top:14px;font-size:.78rem;color:var(--muted);text-tra
 ::-webkit-scrollbar-thumb:hover{background:var(--green);}
 .empty{text-align:center;padding:30px;color:var(--muted);font-size:.9rem;}
 .empty span{font-size:2rem;display:block;margin-bottom:8px;}
-.volatilidad-status{display:flex;align-items:center;gap:14px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px;flex-wrap:wrap;}
-.vol-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
-.vol-dot.on{background:var(--green);box-shadow:0 0 10px var(--green);animation:volpulse 1.5s infinite;}
-.vol-dot.off{background:var(--muted);}
-@keyframes volpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-.vol-status-text{font-family:'Orbitron',sans-serif;font-size:.9rem;}
-.vol-status-text.on{color:var(--green);}
-.vol-status-text.off{color:var(--muted);}
-.vol-next{font-size:.78rem;color:var(--muted);margin-left:auto;}
-.vol-config-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;}
-.vol-stat{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;}
-.vol-stat .val{font-family:'Orbitron',sans-serif;font-size:1.4rem;color:var(--orange);}
-.vol-stat .key{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
-.vol-log{max-height:320px;overflow-y:auto;margin-top:8px;}
+.vol-log{max-height:600px;overflow-y:auto;margin-top:8px;}
 .vol-log-entry{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #ffffff08;font-size:.8rem;}
 .vol-log-time{color:var(--muted);white-space:nowrap;flex-shrink:0;font-size:.72rem;}
 .vol-log-neg{color:var(--blue);flex-shrink:0;}
 .vol-log-change.up{color:var(--green);}
 .vol-log-change.down{color:var(--red);}
-.toggle-switch{position:relative;display:inline-block;width:52px;height:28px;flex-shrink:0;}
-.toggle-switch input{opacity:0;width:0;height:0;}
-.toggle-slider{position:absolute;cursor:pointer;inset:0;background:#333;border-radius:28px;transition:.3s;}
-.toggle-slider:before{content:"";position:absolute;width:20px;height:20px;left:4px;bottom:4px;background:#666;border-radius:50%;transition:.3s;}
-.toggle-switch input:checked+.toggle-slider{background:#00ff9944;border:1px solid var(--green);}
-.toggle-switch input:checked+.toggle-slider:before{transform:translateX(24px);background:var(--green);}
-.range-row{display:flex;align-items:center;gap:10px;}
-.range-row input[type=range]{flex:1;margin-top:0;padding:0;height:6px;accent-color:var(--orange);}
-.range-val{font-family:'Orbitron',sans-serif;font-size:.9rem;color:var(--orange);min-width:38px;text-align:right;}
 @media(max-width:700px){
   header h1{font-size:1.5rem;}
-  .field-row,.vol-config-grid{grid-template-columns:1fr;}
+  .field-row{grid-template-columns:1fr;}
   .info-grid{grid-template-columns:1fr;}
   .card-inputs{grid-template-columns:1fr;}
 }
@@ -434,54 +412,13 @@ label{display:block;margin-top:14px;font-size:.78rem;color:var(--muted);text-tra
     <div id="logsPaginacion"></div>
   </div>
 
-  <!-- VOLATILIDAD -->
+  <!-- VOLATILIDAD (SOLO LECTURA) -->
   <div class="panel" id="volatilidad">
-    <h2>📉 Volatilidad Automática de Precios</h2>
-    <div class="volatilidad-status">
-      <div class="vol-dot off" id="volDot"></div>
-      <span class="vol-status-text off" id="volStatusText">DESACTIVADA</span>
-      <label class="toggle-switch" style="margin-left:8px;">
-        <input type="checkbox" id="volActivoToggle" onchange="guardarConfigVol()">
-        <span class="toggle-slider"></span>
-      </label>
-      <span class="vol-next" id="volNext">—</span>
-    </div>
-    <h3>⚙️ Configuración</h3>
-    <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px;">Estos ajustes se guardan en Firebase y aplican a todos los negocios activos.</p>
-    <div class="vol-config-grid">
-      <div>
-        <label>Veces al día (disparos)</label>
-        <div class="range-row">
-          <input type="range" id="volVeces" min="1" max="24" value="5" oninput="updateRangeLabel('volVeces','volVecesVal');guardarConfigVol()">
-          <span class="range-val" id="volVecesVal">5</span>
-        </div>
-        <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">Intervalo: cada <span id="volIntervaloTexto">4h 48min</span></div>
-      </div>
-      <div>
-        <label>Variación mínima (%)</label>
-        <div class="range-row">
-          <input type="range" id="volMin" min="1" max="20" value="1" oninput="updateRangeLabel('volMin','volMinVal');guardarConfigVol()">
-          <span class="range-val" id="volMinVal">1%</span>
-        </div>
-      </div>
-      <div>
-        <label>Variación máxima (%)</label>
-        <div class="range-row">
-          <input type="range" id="volMax" min="1" max="30" value="5" oninput="updateRangeLabel('volMax','volMaxVal');guardarConfigVol()">
-          <span class="range-val" id="volMaxVal">5%</span>
-        </div>
-      </div>
-      <div>
-        <label>Precio mínimo por acción ($)</label>
-        <input type="number" id="volPrecioMin" min="1" value="100" style="margin-top:8px;" onchange="guardarConfigVol()">
-        <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">Ninguna acción bajará de este precio</div>
-      </div>
-    </div>
-    <!-- FIX: botón disparar restaurado -->
-    <div class="btn-group">
-      <button class="btn btn-orange" onclick="dispararVolatilidadManual()">⚡ Disparar ahora</button>
-      <button class="btn btn-ghost-red" onclick="limpiarLogVol()">🗑️ Limpiar historial</button>
-    </div>
+    <h2>📉 Historial de Volatilidad Automática</h2>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px;">
+      Este panel muestra los cambios de precios generados automáticamente por el sistema.<br>
+      La volatilidad se controla mediante el script Node.js ejecutado en el servidor.
+    </p>
     <h3>📊 Estadísticas</h3>
     <div class="stats-row" style="margin-bottom:0;">
       <div class="stat-card"><div class="val" id="volStatTotal">0</div><div class="key">Disparos totales</div></div>
@@ -489,7 +426,7 @@ label{display:block;margin-top:14px;font-size:.78rem;color:var(--muted);text-tra
       <div class="stat-card"><div class="val" id="volStatBajadas">0</div><div class="key">Bajadas</div></div>
       <div class="stat-card"><div class="val" id="volStatUltimo">—</div><div class="key">Último disparo</div></div>
     </div>
-    <h3>📋 Historial de ajustes</h3>
+    <h3>📋 Historial de ajustes automáticos</h3>
     <div class="vol-log" id="volLogContainer">
       <div class="empty"><span>📉</span>Sin ajustes registrados</div>
     </div>
@@ -518,9 +455,7 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 
 let clientesData={}, negociosData={}, transaccionesData={}, logsData={}, anunciosData={}, papeleraData={};
-let volConfig={activo:false,veces:5,min:1,max:5,precioMin:100};
 let volLogData={};
-let volTimer=null;
 let logPage=0;
 const LOGS_PER_PAGE=50;
 let chartAccion=null;
@@ -567,7 +502,6 @@ function fmtMoney(n){
   return`$${Number(n).toLocaleString("es-ES")}`;
 }
 
-// FIX: imgTag corregido - muestra placeholder cuando la imagen falla
 function imgTag(url,fallback="🏢"){
   if(url)return`<img class="card-img" src="${url}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="card-img-placeholder" style="display:none">${fallback}</div>`;
   return`<div class="card-img-placeholder">${fallback}</div>`;
@@ -583,143 +517,15 @@ function iniciarListeners(){
   onValue(ref(db,"logs/"),snap=>{logsData=snap.val()||{};renderLogs();});
   onValue(ref(db,"anuncios/"),snap=>{anunciosData=snap.val()||{};renderAnuncios();renderDashboard();});
   onValue(ref(db,"papelera/"),snap=>{papeleraData=snap.val()||{};renderPapelera();renderDashboard();});
-  onValue(ref(db,"volatilidad/config"),snap=>{
-    const d=snap.val();
-    if(d){volConfig={...volConfig,...d};aplicarConfigUI();}
-  });
   onValue(ref(db,"volatilidad/log"),snap=>{
-    volLogData=snap.val()||{};renderVolLog();
+    console.log('📉 Firebase volatilidad/log recibido:', snap.val());
+    volLogData=snap.val()||{};
+    renderVolLog();
   });
 }
-
-window.updateRangeLabel=function(rangeId,labelId){
-  const v=document.getElementById(rangeId).value;
-  const isPercent=rangeId.includes('Min')||rangeId.includes('Max');
-  document.getElementById(labelId).textContent=isPercent?v+'%':v;
-  if(rangeId==='volVeces') actualizarIntervaloTexto(v);
-};
-
-function actualizarIntervaloTexto(veces){
-  const mins=Math.round(24*60/veces);
-  const h=Math.floor(mins/60);const m=mins%60;
-  document.getElementById('volIntervaloTexto').textContent=h>0?`${h}h ${m}min`:`${m}min`;
-}
-
-function aplicarConfigUI(){
-  document.getElementById('volActivoToggle').checked=!!volConfig.activo;
-  document.getElementById('volVeces').value=volConfig.veces||5;
-  document.getElementById('volMin').value=volConfig.min||1;
-  document.getElementById('volMax').value=volConfig.max||5;
-  document.getElementById('volPrecioMin').value=volConfig.precioMin||100;
-  document.getElementById('volVecesVal').textContent=volConfig.veces||5;
-  document.getElementById('volMinVal').textContent=(volConfig.min||1)+'%';
-  document.getElementById('volMaxVal').textContent=(volConfig.max||5)+'%';
-  actualizarIntervaloTexto(volConfig.veces||5);
-  actualizarStatusUI();
-  reiniciarTimer();
-}
-
-function actualizarStatusUI(){
-  const activo=volConfig.activo;
-  const dot=document.getElementById('volDot');
-  const txt=document.getElementById('volStatusText');
-  dot.className='vol-dot '+(activo?'on':'off');
-  txt.className='vol-status-text '+(activo?'on':'off');
-  txt.textContent=activo?'ACTIVA':'DESACTIVADA';
-}
-
-window.guardarConfigVol=function(){
-  const cfg={
-    activo:document.getElementById('volActivoToggle').checked,
-    veces:Number(document.getElementById('volVeces').value),
-    min:Number(document.getElementById('volMin').value),
-    max:Number(document.getElementById('volMax').value),
-    precioMin:Number(document.getElementById('volPrecioMin').value)||100
-  };
-  if(cfg.min>cfg.max){cfg.min=cfg.max;}
-  volConfig={...cfg};
-  set(ref(db,'volatilidad/config'),cfg);
-  actualizarStatusUI();
-  reiniciarTimer();
-};
-
-function reiniciarTimer(){
-  if(volTimer){clearInterval(volTimer);volTimer=null;}
-  if(!volConfig.activo)return;
-  const intervaloMs=(24*60*60*1000)/volConfig.veces;
-  const ahora=Date.now();
-  const inicioDelDia=new Date();
-  inicioDelDia.setHours(0,0,0,0);
-  const msSinceStart=ahora-inicioDelDia.getTime();
-  const disparoActual=Math.floor(msSinceStart/intervaloMs);
-  const proximoMs=inicioDelDia.getTime()+(disparoActual+1)*intervaloMs;
-  const msHastaProximo=proximoMs-ahora;
-  actualizarProximoDisparo(proximoMs);
-  setTimeout(()=>{
-    ejecutarVolatilidad();
-    volTimer=setInterval(()=>{
-      ejecutarVolatilidad();
-      actualizarProximoDisparo(Date.now()+(24*60*60*1000/volConfig.veces));
-    },intervaloMs);
-  },msHastaProximo);
-  setInterval(()=>{
-    if(!volConfig.activo)return;
-    const next=Number(document.getElementById('volNext').dataset.ts||0);
-    if(!next)return;
-    const diff=next-Date.now();
-    if(diff<=0){document.getElementById('volNext').textContent='Disparando...';return;}
-    const h=Math.floor(diff/3600000);
-    const m=Math.floor((diff%3600000)/60000);
-    const s=Math.floor((diff%60000)/1000);
-    document.getElementById('volNext').textContent=`Próximo en: ${h>0?h+'h ':''} ${m}m ${s}s`;
-  },1000);
-}
-
-function actualizarProximoDisparo(ts){
-  document.getElementById('volNext').dataset.ts=ts;
-}
-
-async function ejecutarVolatilidad(){
-  if(!volConfig.activo)return;
-  const negs=Object.entries(negociosData).filter(([k,n])=>(n.estado||'activa')==='activa');
-  if(!negs.length)return;
-  const updates={};
-  const ahora=Date.now();
-  let subidas=0,bajadas=0;
-  const entradas=[];
-  for(const [key,neg] of negs){
-    const rango=volConfig.max-volConfig.min;
-    const pct=(Math.random()*rango+volConfig.min)/100;
-    const sube=Math.random()>=0.5;
-    const precioActual=neg.valorAccion||100;
-    let nuevoPrecio=sube?precioActual*(1+pct):precioActual*(1-pct);
-    nuevoPrecio=Math.max(volConfig.precioMin||100,Math.round(nuevoPrecio));
-    const cambio=nuevoPrecio-precioActual;
-    updates[`negocios/${key}/valorAccion`]=nuevoPrecio;
-    const histRef=push(ref(db,`negocios/${key}/valorHistorial`));
-    updates[`negocios/${key}/valorHistorial/${histRef.key}`]={ts:ahora,precio:nuevoPrecio};
-    if(sube)subidas++;else bajadas++;
-    entradas.push({neg:neg.nombre,anterior:precioActual,nuevo:nuevoPrecio,cambio,pct:Math.round(pct*10000)/100,sube,ts:ahora});
-    logAccion(`[VOL] ${neg.nombre}: ${sube?'▲':'▼'} ${fmtMoney(precioActual)} → ${fmtMoney(nuevoPrecio)} (${sube?'+':''}${cambio>=0?'+':''}${Math.round(cambio).toLocaleString('es-ES')})`, 'volatilidad', key, null);
-  }
-  await update(ref(db),updates);
-  const logKey=push(ref(db,'volatilidad/log'));
-  set(ref(db,`volatilidad/log/${logKey.key}`),{ts:ahora,subidas,bajadas,negocios:negs.length,detalle:entradas});
-  showPopup(`📉 Volatilidad: ${subidas} ▲ subidas · ${bajadas} ▼ bajadas`);
-}
-
-window.dispararVolatilidadManual=function(){
-  if(!Object.keys(negociosData).length){showPopup('⚠️ No hay negocios activos');return;}
-  ejecutarVolatilidad();
-};
-
-window.limpiarLogVol=function(){
-  if(!confirm('¿Limpiar el historial de volatilidad?'))return;
-  remove(ref(db,'volatilidad/log')).then(()=>showPopup('🗑️ Historial limpiado'));
-};
 
 function renderVolLog(){
-  console.log('📉 volLogData:', volLogData); // DEBUG para ver qué recibe
+  console.log('📉 volLogData actual:', volLogData);
   const entries=Object.values(volLogData).sort((a,b)=>b.ts-a.ts);
   const cont=document.getElementById('volLogContainer');
   let totalSubidas=0,totalBajadas=0;
@@ -752,7 +558,6 @@ function renderVolLog(){
     </div>`;
   }).join('');
 }
-
 
 function actualizarSelects(){
   const nOpts=(ph)=>{let h=`<option value="">${ph}</option>`;for(let k in negociosData)h+=`<option value="${k}">${negociosData[k].nombre}</option>`;return h;};
@@ -1336,4 +1141,3 @@ document.querySelectorAll(".tab").forEach(tab=>{
 </script>
 </body>
 </html>
-
