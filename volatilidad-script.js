@@ -12,35 +12,76 @@ admin.initializeApp({
 
 const db = admin.database();
 
+// Configuración de volatilidad (puedes ajustarla desde Firebase / frontend)
+const VOL_CONFIG_PATH = 'volatilidad/config';
+const VOL_LOG_PATH = 'volatilidad/log';
+
 async function aplicarVolatilidad() {
   try {
-    const ref = db.ref("productos");
-    const snapshot = await ref.once("value");
+    // Leer configuración de volatilidad desde Firebase
+    const cfgSnap = await db.ref(VOL_CONFIG_PATH).once('value');
+    const cfg = cfgSnap.val() || { activo: true, min: 1, max: 5, precioMin: 100 };
 
-    if (!snapshot.exists()) {
-      console.log("No hay productos para procesar.");
+    if (!cfg.activo) {
+      console.log("Volatilidad desactivada, no se aplica nada.");
       return;
     }
 
-    const productos = snapshot.val();
-    const updates = {};
+    // Leer negocios
+    const ref = db.ref("negocios");
+    const snap = await ref.once("value");
 
-    for (const id in productos) {
-      const producto = productos[id];
-
-      if (!producto.precio) continue;
-
-      // Variación aleatoria ±5%
-      const variacion = 1 + (Math.random() * 0.1 - 0.05);
-      const nuevoPrecio = Math.round(producto.precio * variacion * 100) / 100;
-
-      updates[`${id}/precio`] = nuevoPrecio;
+    if (!snap.exists()) {
+      console.log("No hay negocios para procesar.");
+      return;
     }
 
+    const negocios = snap.val();
+    const updates = {};
+    const ahora = Date.now();
+    let subidas = 0, bajadas = 0;
+    const detalle = [];
+
+    for (const id in negocios) {
+      const neg = negocios[id];
+      if ((neg.estado || 'activa') !== 'activa') continue;
+      if (!neg.valorAccion) continue;
+
+      // Variación aleatoria entre min% y max%
+      const rango = cfg.max - cfg.min;
+      const pct = (Math.random() * rango + cfg.min) / 100;
+      const sube = Math.random() >= 0.5;
+      const precioActual = neg.valorAccion;
+      let nuevoPrecio = sube ? precioActual * (1 + pct) : precioActual * (1 - pct);
+
+      // Aplicar precio mínimo y redondear
+      nuevoPrecio = Math.max(cfg.precioMin || 100, Math.round(nuevoPrecio));
+
+      updates[`${id}/valorAccion`] = nuevoPrecio;
+
+      // Guardar historial
+      const histRef = db.ref(`negocios/${id}/valorHistorial`).push();
+      updates[`negocios/${id}/valorHistorial/${histRef.key}`] = { ts: ahora, precio: nuevoPrecio };
+
+      if (sube) subidas++; else bajadas++;
+      detalle.push({ negocio: neg.nombre, anterior: precioActual, nuevo: nuevoPrecio, sube, pct: Math.round(pct * 10000) / 100, ts: ahora });
+    }
+
+    if (!Object.keys(updates).length) {
+      console.log("No hay negocios activos para procesar.");
+      return;
+    }
+
+    // Actualizar Firebase
     await ref.update(updates);
-    console.log("Volatilidad aplicada correctamente.");
-  } catch (error) {
-    console.error("Error aplicando volatilidad:", error);
+
+    // Guardar log global de volatilidad
+    const logKey = db.ref(VOL_LOG_PATH).push();
+    await db.ref(`${VOL_LOG_PATH}/${logKey.key}`).set({ ts: ahora, subidas, bajadas, negocios: Object.keys(negocios).length, detalle });
+
+    console.log(`📉 Volatilidad aplicada: ${subidas} ▲ subidas · ${bajadas} ▼ bajadas`);
+  } catch (err) {
+    console.error("Error aplicando volatilidad:", err);
     process.exit(1);
   }
 }
