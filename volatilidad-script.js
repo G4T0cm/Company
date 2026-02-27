@@ -12,6 +12,7 @@ admin.initializeApp({
 });
 const db = admin.database();
 const VOL_CONFIG_PATH = "volatilidad/config";
+
 async function enviarADiscord(detalle, subidas, bajadas, ts) {
   const lines = detalle.slice(0, 20).map(d =>
     `${d.sube ? "🟢" : "🔴"} **${d.negocio}**  
@@ -104,17 +105,18 @@ async function aplicarVolatilidad() {
     }
     console.log(`✅ Aplicando ${negociosActivos} cambios (${subidas} subidas, ${bajadas} bajadas)...`);
     await db.ref().update(updates);
+    console.log("📝 Precios actualizados en Firebase");
     
-    // 🔴 GUARDAR EN VOLATILIDAD/LOG PARA LA GESTORA
-    const logKey = db.ref().push().key;
-    await db.ref(`volatilidad/log/${logKey}`).set({
+    // 🔴 GUARDAR EN VOLATILIDAD/LOG CORRECTAMENTE
+    console.log("📝 Guardando en volatilidad/log...");
+    await db.ref("volatilidad/log").push({
       ts: ahora,
       subidas,
       bajadas,
       negocios: negociosActivos,
       detalle: detalle
     });
-    console.log("📝 Registrado en volatilidad/log");
+    console.log("✅ Registrado en volatilidad/log");
     
     // 🔔 ENVIAR A DISCORD
     await enviarADiscord(detalle, subidas, bajadas, ahora);
