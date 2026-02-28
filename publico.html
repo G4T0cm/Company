@@ -201,7 +201,7 @@ function fmtMoney(n) {
   if (!n && n !== 0) return '—';
   if (n >= 1e9) return `$${(n/1e9).toFixed(2)}B`;
   if (n >= 1e6) return `$${(n/1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `$${(n/1e3).toFixed(1)}K`;
+  if (n >= 1e3) return `$${(n/1e3).toFixed(2)}K`;  // 2 decimales
   return `$${Number(n).toLocaleString('es-ES')}`;
 }
 function fmtNum(n) { return Number(n).toLocaleString('es-ES'); }
@@ -426,3 +426,4 @@ onValue(ref(db, 'anuncios/'), snapshot => {
 </script>
 </body>
 </html>
+
