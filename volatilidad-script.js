@@ -48,7 +48,7 @@ async function aplicarVolatilidad() {
   try {
     console.log("🔄 Iniciando volatilidad...");
     const cfgSnap = await db.ref(VOL_CONFIG_PATH).once("value");
-    const cfg = cfgSnap.val() || { activo: true, min: 1, max: 5, precioMin: 100 };
+    const cfg = cfgSnap.val() || { activo: true, min: 1, max: 3, precioMin: 100 };
     console.log("⚙️ Configuración:", cfg);
     if (!cfg.activo) {
       console.log("Volatilidad desactivada, saliendo.");
@@ -71,7 +71,7 @@ async function aplicarVolatilidad() {
       if ((neg.estado || "activa") !== "activa") continue;
       if (!neg.valorAccion) continue;
       negociosActivos++;
-      const rango = (cfg.max || 5) - (cfg.min || 1);
+      const rango = (cfg.max || 3) - (cfg.min || 1);
       const pct = (Math.random() * rango + (cfg.min || 1)) / 100;
       const sube = Math.random() >= 0.5;
       const precioActual = neg.valorAccion;
