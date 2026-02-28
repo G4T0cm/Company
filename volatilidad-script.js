@@ -48,7 +48,17 @@ async function aplicarVolatilidad() {
   try {
     console.log("🔄 Iniciando volatilidad...");
     const cfgSnap = await db.ref(VOL_CONFIG_PATH).once("value");
-    const cfg = cfgSnap.val() || { activo: true, min: 1, max: 3, precioMin: 100 };
+    const cfg = cfgSnap.val() || {
+      activo: true,
+      precioMin: 100
+      // Volatilidad por tramos de precio:
+      // 0-100: 1-2%
+      // 101-200: 1-2%
+      // 201-300: 1-3%
+      // 301-500: 1-4%
+      // 501-800: 1-6%
+      // 801+: 1-7%
+    };
     console.log("⚙️ Configuración:", cfg);
     if (!cfg.activo) {
       console.log("Volatilidad desactivada, saliendo.");
@@ -71,10 +81,35 @@ async function aplicarVolatilidad() {
       if ((neg.estado || "activa") !== "activa") continue;
       if (!neg.valorAccion) continue;
       negociosActivos++;
-      const rango = (cfg.max || 3) - (cfg.min || 1);
-      const pct = (Math.random() * rango + (cfg.min || 1)) / 100;
-      const sube = Math.random() >= 0.5;
       const precioActual = neg.valorAccion;
+      
+      // Determinar volatilidad según tramos de precio
+      let minVol, maxVol;
+      
+      if (precioActual <= 100) {
+        minVol = 1;
+        maxVol = 2;
+      } else if (precioActual <= 200) {
+        minVol = 1;
+        maxVol = 2;
+      } else if (precioActual <= 300) {
+        minVol = 1;
+        maxVol = 3;
+      } else if (precioActual <= 500) {
+        minVol = 1;
+        maxVol = 4;
+      } else if (precioActual <= 800) {
+        minVol = 1;
+        maxVol = 6;
+      } else {
+        minVol = 1;
+        maxVol = 7;
+      }
+      
+      const rango = maxVol - minVol;
+      const pct = (Math.random() * rango + minVol) / 100;
+      const sube = Math.random() >= 0.5;
+      
       let nuevoPrecio = sube
         ? precioActual * (1 + pct)
         : precioActual * (1 - pct);
@@ -97,7 +132,7 @@ async function aplicarVolatilidad() {
         cambio: cambio,
         ts: ahora
       });
-      console.log(`${sube ? "▲" : "▼"} ${neg.nombre}: ${fmtMoney(precioActual)} → ${fmtMoney(nuevoPrecio)}`);
+      console.log(`${sube ? "▲" : "▼"} ${neg.nombre}: ${fmtMoney(precioActual)} → ${fmtMoney(nuevoPrecio)} (${minVol}-${maxVol}%)`);
     }
     if (!Object.keys(updates).length) {
       console.log("Sin negocios activos.");
