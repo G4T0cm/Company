@@ -619,6 +619,7 @@ window.renderNegocios=function(){
         <div class="card-actions">
           <span class="status-${n.estado||"activa"}">${(n.estado||"activa").toUpperCase()}</span>
           <button class="btn btn-sm btn-ghost" onclick="toggleCard('card-neg-${k}')">✏️ Editar</button>
+          <button class="btn btn-sm btn-orange" onclick="resetearGrafico('${k}')">🔄 Reset</button>
           <button class="btn btn-sm btn-ghost" onclick="abrirGraficaPrecio('${k}')">📈</button>
           <button class="btn btn-sm btn-ghost-red" onclick="eliminarNegocio('${k}')">🗑️</button>
         </div>
@@ -1094,6 +1095,23 @@ window.restaurarCliente=(key)=>{
 window.eliminarDefNeg=(key)=>{if(!confirm("¿Eliminar definitivamente?"))return;remove(ref(db,"papelera/negocios/"+key)).then(()=>showPopup("💀 Eliminado"));};
 window.eliminarDefCli=(key)=>{if(!confirm("¿Eliminar definitivamente?"))return;remove(ref(db,"papelera/clientes/"+key)).then(()=>showPopup("💀 Eliminado"));};
 window.vaciarPapelera=()=>{if(!confirm("¿Vaciar toda la papelera?"))return;remove(ref(db,"papelera/")).then(()=>showPopup("🗑️ Papelera vaciada"));};
+
+window.resetearGrafico = function(key) {
+  if (!confirm(`ESTO RESETEARA EL GRAFICO DE LA PAGINA PUBLICA.`)) return;
+  
+  remove(ref(db, `negocios/${key}/valorHistorial/`)).then(() => {
+    const n = negociosData[key];
+    push(ref(db, `negocios/${key}/valorHistorial`), {
+      ts: Date.now(),
+      precio: n.valorAccion
+    }).then(() => {
+      showPopup("🔄 Gráfico reseteado!");
+      logAccion(`Gráfico reseteado: ${n.nombre}`, "negocio", key, null);
+      renderNegocios();
+    });
+  });
+};
+
 
 function logAccion(mensaje,tipo="general",negocioId=null,clienteId=null){
   push(ref(db,"logs/"),{mensaje,tipo,negocioId,clienteId,timestamp:Date.now()});
