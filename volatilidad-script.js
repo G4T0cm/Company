@@ -3,7 +3,7 @@ const admin = require("firebase-admin");
 const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 const DISCORD_WEBHOOK_URL =
-  "https://discord.com/api/webhooks/1476990460063912181/GFqpqUYq-KgfEdUAxlC7HlCufitcUCzIYBN2Y_kVDKxwP0phh0ck2GOLbL3vviSSAXJf";
+  "https://discord.com/api/webhooks/1477314293946122376/jYG54gCmMAObMCqZfGfZJvv2O-AvOfZzixJ1yw8Ev1OY1PocFXoDPqrE24N6nBGQ7R8X";
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 const databaseURL = process.env.FIREBASE_DATABASE_URL;
 admin.initializeApp({
