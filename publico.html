@@ -267,8 +267,8 @@ footer{text-align:center;padding:24px 0;color:var(--muted);font-size:clamp(.8rem
     <!-- Formulario de búsqueda -->
     <div id="formularioCartera">
       <div class="form-group">
-        <label class="form-label">Numero de Telefono</label>
-        <input type="text" id="usuarioId" class="form-input" placeholder="Ej: 8743926150" onkeypress="if(event.key==='Enter') consultarCartera()">
+        <label class="form-label">ID de Usuario (Gestoría)</label>
+        <input type="text" id="usuarioId" class="form-input" placeholder="Ej: usuario123" onkeypress="if(event.key==='Enter') consultarCartera()">
       </div>
       <button class="btn-submit" onclick="consultarCartera()">Consultar Cartera</button>
       <div id="errorMsg"></div>
@@ -377,15 +377,23 @@ function updateStats(data) {
 
 function filterPuntos(puntos, tipo) {
   if (!puntos || puntos.length === 0) return [];
-  const ahora = Date.now();
+  const ahora = new Date();
   let limite = 0;
   
   if (tipo === 'day') {
-    limite = ahora - (24 * 60 * 60 * 1000);
+    // Medianoche de hoy (00:00:00)
+    const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+    limite = hoy.getTime();
   } else if (tipo === 'week') {
-    limite = ahora - (7 * 24 * 60 * 60 * 1000);
+    // Hace 7 días desde hoy
+    const hace7dias = new Date(ahora);
+    hace7dias.setDate(hace7dias.getDate() - 7);
+    limite = hace7dias.getTime();
   } else if (tipo === 'month') {
-    limite = ahora - (30 * 24 * 60 * 60 * 1000);
+    // Hace 30 días desde hoy
+    const hace30dias = new Date(ahora);
+    hace30dias.setDate(hace30dias.getDate() - 30);
+    limite = hace30dias.getTime();
   }
   
   return puntos.filter(p => p.ts >= limite);
@@ -799,4 +807,3 @@ window.consultarCartera = async function() {
 </script>
 </body>
 </html>
-
