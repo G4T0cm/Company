@@ -267,8 +267,8 @@ footer{text-align:center;padding:24px 0;color:var(--muted);font-size:clamp(.8rem
     <!-- Formulario de búsqueda -->
     <div id="formularioCartera">
       <div class="form-group">
-        <label class="form-label">ID de Usuario (Gestoría)</label>
-        <input type="text" id="usuarioId" class="form-input" placeholder="Ej: usuario123" onkeypress="if(event.key==='Enter') consultarCartera()">
+        <label class="form-label">Numero de Telefono</label>
+        <input type="text" id="usuarioId" class="form-input" placeholder="Ej: 8743926150" onkeypress="if(event.key==='Enter') consultarCartera()">
       </div>
       <button class="btn-submit" onclick="consultarCartera()">Consultar Cartera</button>
       <div id="errorMsg"></div>
@@ -799,3 +799,4 @@ window.consultarCartera = async function() {
 </script>
 </body>
 </html>
+
