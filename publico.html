@@ -6,6 +6,7 @@
 <title>Reagan Bros · Bolsa</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -23,6 +24,17 @@ body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(
 header{text-align:center;padding:24px 0 16px;}
 .logo{font-family:'Orbitron',sans-serif;font-size:clamp(2rem,6vw,2.8rem);font-weight:900;letter-spacing:clamp(1px,1vw,4px);background:linear-gradient(135deg,var(--blue),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .tagline{font-size:clamp(.85rem,2vw,.9rem);color:var(--muted);text-transform:uppercase;letter-spacing:clamp(1px,1vw,4px);margin-top:6px;}
+
+.header-controls{position:fixed;top:20px;right:20px;z-index:100;}
+.header-controls-left{position:fixed;top:20px;left:20px;z-index:100;}
+.btn-captura, .btn-cartera{padding:8px 14px;border-radius:6px;border:1.5px solid var(--green);background:transparent;color:var(--green);font-family:'Orbitron',sans-serif;font-weight:600;font-size:clamp(.75rem,1.5vw,.8rem);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:.3s;white-space:nowrap;}
+.btn-cartera{border-color:var(--blue);color:var(--blue);}
+.btn-captura:hover{background:var(--green);color:#000;box-shadow:0 0 20px #00ff9966;}
+.btn-cartera:hover{background:var(--blue);color:#000;box-shadow:0 0 20px #00aaff66;}
+.btn-captura:active, .btn-cartera:active{transform:scale(.95);}
+.btn-captura.loading, .btn-cartera.loading{opacity:.6;cursor:not-allowed;}
+.btn-captura.loading::after, .btn-cartera.loading::after{content:" ⟳";animation:spin .8s linear infinite;}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 
 .status-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:clamp(.9rem,2.5vw,.95rem);}
 .status-left{display:flex;align-items:center;gap:12px;}
@@ -125,10 +137,71 @@ header{text-align:center;padding:24px 0 16px;}
 .anuncio-fecha{font-size:clamp(.78rem,1.8vw,.82rem);color:var(--muted);white-space:nowrap;}
 .anuncio-texto{font-size:clamp(.9rem,2.5vw,.95rem);color:#a0b8cc;line-height:1.7;padding-left:2px;}
 
+/* Estilos para la captura */
+.captura-container{position:fixed;left:-9999px;top:0;width:1200px;background:#0a0a0a;color:var(--text);font-family:'Share Tech Mono',monospace;z-index:-1;}
+.captura-header{background:linear-gradient(135deg,#0066ff,#ff0044);padding:40px 20px;text-align:center;color:#fff;}
+.captura-logo{font-family:'Orbitron',sans-serif;font-size:48px;font-weight:900;letter-spacing:4px;}
+.captura-tagline{font-size:16px;margin-top:10px;opacity:.95;font-weight:700;}
+.captura-time{font-size:20px;margin-top:15px;font-weight:700;font-family:'Orbitron',sans-serif;}
+.captura-content{padding:50px 40px;}
+.captura-title{font-family:'Orbitron',sans-serif;font-size:32px;color:#0066ff;text-transform:uppercase;letter-spacing:3px;margin-bottom:40px;border-bottom:3px solid #ff0044;padding-bottom:20px;}
+.captura-items{display:grid;grid-template-columns:1fr 1fr;gap:25px;}
+.captura-item{display:flex;flex-direction:column;align-items:center;gap:15px;padding:25px;background:#111;border:2px solid #0066ff33;border-radius:12px;text-align:center;position:relative;overflow:hidden;}
+.captura-item::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0066ff,#ff0044);}
+.captura-item-img{width:120px;height:120px;object-fit:cover;border-radius:8px;border:2px solid #0066ff;flex-shrink:0;}
+.captura-item-img-placeholder{width:120px;height:120px;border-radius:8px;border:2px solid #0066ff;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:48px;flex-shrink:0;}
+.captura-item-info{flex:1;width:100%;}
+.captura-item-name{font-family:'Orbitron',sans-serif;font-size:20px;color:#0066ff;font-weight:900;letter-spacing:1px;}
+.captura-item-code{font-size:14px;color:#888;margin-top:6px;font-weight:700;}
+.captura-item-price{font-size:40px;font-weight:900;color:#0066ff;font-family:'Orbitron',sans-serif;margin-top:10px;letter-spacing:2px;}
+.captura-item-change{display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;margin-top:12px;letter-spacing:1px;}
+.captura-item-change.up{color:#0066ff;}
+.captura-item-change.down{color:#ff0044;}
+.captura-footer{text-align:center;color:#666;font-size:14px;margin-top:40px;padding-top:20px;border-top:2px solid #333;font-weight:700;letter-spacing:1px;}
+
 footer{text-align:center;padding:24px 0;color:var(--muted);font-size:clamp(.8rem,2vw,.85rem);border-top:1px solid var(--border);margin-top:32px;}
+
+/* Modal de Cartera */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;backdrop-filter:blur(4px);}
+.modal-overlay.active{display:flex;align-items:center;justify-content:center;}
+.modal-box{background:var(--panel);border:2px solid var(--blue);border-radius:12px;padding:30px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;animation:slideIn .3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+.modal-close{position:absolute;top:15px;right:15px;background:none;border:none;color:var(--blue);font-size:24px;cursor:pointer;transition:.2s;}
+.modal-close:hover{color:var(--green);}
+.modal-title{font-family:'Orbitron',sans-serif;font-size:20px;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;}
+.form-group{margin-bottom:15px;}
+.form-label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.form-input{width:100%;padding:10px 12px;background:#070b0f;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:14px;transition:.2s;}
+.form-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 8px #00aaff22;}
+.btn-submit{width:100%;padding:10px;background:var(--blue);border:none;border-radius:6px;color:#000;font-family:'Orbitron',sans-serif;font-weight:700;cursor:pointer;transition:.2s;margin-top:10px;}
+.btn-submit:hover{background:#00ccff;box-shadow:0 0 15px #00aaff44;}
+.btn-submit.loading{opacity:.6;cursor:not-allowed;}
+
+.cartera-info{display:none;}
+.cartera-info.active{display:block;}
+.cartera-user-header{background:linear-gradient(135deg,var(--blue),var(--green));color:#000;padding:20px;border-radius:8px;margin-bottom:20px;text-align:center;}
+.cartera-user-name{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;letter-spacing:1px;}
+.cartera-user-id{font-size:12px;opacity:.8;margin-top:4px;}
+.cartera-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.cartera-stat{background:#070b0f;border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center;}
+.cartera-stat-val{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;color:var(--green);}
+.cartera-stat-key{font-size:11px;color:var(--muted);margin-top:4px;}
+.cartera-acciones-title{font-family:'Orbitron',sans-serif;font-size:14px;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+.cartera-accion{background:#070b0f;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:10px;}
+.cartera-accion-name{font-family:'Orbitron',sans-serif;color:var(--text);font-weight:700;font-size:13px;}
+.cartera-accion-code{font-size:11px;color:var(--muted);margin-top:2px;}
+.cartera-accion-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;font-size:12px;}
+.cartera-accion-stat{display:flex;justify-content:space-between;}
+.cartera-accion-stat-key{color:var(--muted);}
+.cartera-accion-stat-val{color:var(--green);font-weight:700;}
+.error-msg{color:var(--red);background:#ff335510;border:1px solid #ff335533;padding:12px;border-radius:6px;margin-bottom:15px;font-size:12px;}
+.loading-spinner{text-align:center;color:var(--muted);}
+.loading-spinner::after{content:"⟳";display:inline-block;animation:spin .8s linear infinite;font-size:20px;}
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 @keyframes flash{0%{background:#00ff9910;}100%{background:var(--panel);}}
+@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+@keyframes slideUp{from{opacity:1;transform:translateX(-50%) translateY(0);}to{opacity:0;transform:translateX(-50%) translateY(-20px);}}
 .neg-card.updated{animation:flash .8s ease;}
 </style>
 </head>
@@ -138,6 +211,14 @@ footer{text-align:center;padding:24px 0;color:var(--muted);font-size:clamp(.8rem
     <div class="logo">REAGAN BROS Co.</div>
     <div class="tagline">PRECIOS DE ACCIONES · En vivo</div>
   </header>
+
+  <div class="header-controls-left">
+    <button class="btn-cartera" onclick="abrirModalCartera()">👤 Cartera</button>
+  </div>
+
+  <div class="header-controls">
+    <button class="btn-captura" onclick="generarCaptura()">📸 Captura</button>
+  </div>
 
   <div class="status-bar">
     <div class="status-left">
@@ -173,6 +254,52 @@ footer{text-align:center;padding:24px 0;color:var(--muted);font-size:clamp(.8rem
   <footer>REAGAN BROS COMPANY · BOLSA DE VALORES · DATOS EN TIEMPO REAL</footer>
 </div>
 
+<!-- Contenedor para la captura (oculto) -->
+<div class="captura-container" id="capturaContainer"></div>
+
+<!-- Modal de Cartera -->
+<div class="modal-overlay" id="modalCartera">
+  <div class="modal-box">
+    <button class="modal-close" onclick="cerrarModalCartera()">✕</button>
+    
+    <div class="modal-title">📊 Mi Cartera</div>
+    
+    <!-- Formulario de búsqueda -->
+    <div id="formularioCartera">
+      <div class="form-group">
+        <label class="form-label">ID de Usuario (Gestoría)</label>
+        <input type="text" id="usuarioId" class="form-input" placeholder="Ej: usuario123" onkeypress="if(event.key==='Enter') consultarCartera()">
+      </div>
+      <button class="btn-submit" onclick="consultarCartera()">Consultar Cartera</button>
+      <div id="errorMsg"></div>
+    </div>
+    
+    <!-- Información de la cartera -->
+    <div id="infoCartera" class="cartera-info">
+      <div class="cartera-user-header">
+        <div class="cartera-user-name" id="nombreUsuario">—</div>
+        <div class="cartera-user-id" id="idUsuario">—</div>
+      </div>
+      
+      <div class="cartera-stats">
+        <div class="cartera-stat">
+          <div class="cartera-stat-val" id="totalAcciones">0</div>
+          <div class="cartera-stat-key">Total Acciones</div>
+        </div>
+        <div class="cartera-stat">
+          <div class="cartera-stat-val" id="valorTotal">—</div>
+          <div class="cartera-stat-key">Valor Total</div>
+        </div>
+      </div>
+      
+      <div class="cartera-acciones-title">📈 Tus Acciones</div>
+      <div id="listaAcciones"></div>
+      
+      <button class="btn-submit" style="background:var(--orange);margin-top:20px;" onclick="cerrarModalCartera()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -192,6 +319,7 @@ const db = getDatabase(app);
 let prevData = {};
 const cardCharts = {};
 const chartFilters = {};
+let currentNegociosData = {};
 
 setInterval(() => {
   document.getElementById("clockDisplay").textContent = new Date().toLocaleTimeString('es-ES');
@@ -201,7 +329,7 @@ function fmtMoney(n) {
   if (!n && n !== 0) return '—';
   if (n >= 1e9) return `$${(n/1e9).toFixed(2)}B`;
   if (n >= 1e6) return `$${(n/1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `$${(n/1e3).toFixed(2)}K`;  // 2 decimales
+  if (n >= 1e3) return `$${(n/1e3).toFixed(2)}K`;
   return `$${Number(n).toLocaleString('es-ES')}`;
 }
 function fmtNum(n) { return Number(n).toLocaleString('es-ES'); }
@@ -209,6 +337,17 @@ function stockPct(disp, total) { if (!total) return 0; return Math.round((disp /
 function badgeClass(pct) { return pct > 60 ? 'badge-high' : pct > 25 ? 'badge-mid' : 'badge-low'; }
 function badgeLabel(pct) { return pct > 60 ? '🟢 ALTA' : pct > 25 ? '🟡 MEDIA' : '🔴 ESCASA'; }
 function fillClass(pct) { return pct > 60 ? 'fill-green' : pct > 25 ? 'fill-orange' : 'fill-red'; }
+
+function showPopup(msg) {
+  const popup = document.createElement('div');
+  popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#ff9933,#00ff99);color:#000;padding:16px 28px;border-radius:8px;font-weight:700;font-family:Orbitron,sans-serif;z-index:10000;box-shadow:0 0 20px #00ff9944;animation:slideDown .3s ease;';
+  popup.textContent = msg;
+  document.body.appendChild(popup);
+  setTimeout(() => {
+    popup.style.animation = 'slideUp .3s ease';
+    setTimeout(() => popup.remove(), 300);
+  }, 2500);
+}
 
 function updateTicker(data) {
   const items = Object.entries(data);
@@ -398,6 +537,7 @@ onValue(ref(db, 'negocios/'), snapshot => {
   const raw = snapshot.val() || {};
   const data = Object.fromEntries(Object.entries(raw).filter(([k, n]) => n.estado !== 'liquidacion'));
   window.negociosDataGlobal = data;
+  currentNegociosData = data;
   renderCards(data);
   updateTicker(data);
   updateStats(data);
@@ -423,7 +563,239 @@ onValue(ref(db, 'anuncios/'), snapshot => {
       <div class="anuncio-texto">${a.texto}</div>
     </div>`).join('');
 });
+
+// Función para generar la captura
+window.generarCaptura = async function() {
+  const btn = document.querySelector('.btn-captura');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  
+  try {
+    const data = currentNegociosData;
+    const container = document.getElementById('capturaContainer');
+    const ahora = new Date();
+    const fechaHora = ahora.toLocaleString('es-ES');
+    
+    // Construir el HTML de la captura
+    let items = '';
+    Object.entries(data).slice(0, 8).forEach(([k, n]) => {
+      const total = n.accionesTotales || n.acciones || 0;
+      const disp = n.acciones || 0;
+      const vendidas = total - disp;
+      const precioActual = n.valorAccion || 0;
+      
+      // Obtener el precio anterior (del historial)
+      const historial = n.valorHistorial ? Object.values(n.valorHistorial).map(v => (typeof v === 'object' && v.precio) ? v : null).filter(Boolean).sort((a, b) => a.ts - b.ts) : [];
+      const precioPrevio = historial.length > 0 ? historial[historial.length - 2]?.precio || historial[0]?.precio : precioActual;
+      const cambio = precioActual - precioPrevio;
+      const pctCambio = precioPrevio ? ((cambio / precioPrevio) * 100).toFixed(2) : 0;
+      
+      const isUp = cambio >= 0;
+      const changeSymbol = isUp ? '▲' : '▼';
+      
+      // Imagen o placeholder
+      const imgHTML = n.imagen 
+        ? `<img class="captura-item-img" src="${n.imagen}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : '';
+      const placeholderHTML = `<div class="captura-item-img-placeholder" ${n.imagen ? 'style="display:none"' : ''}>🏢</div>`;
+      
+      items += `
+        <div class="captura-item">
+          ${imgHTML}${placeholderHTML}
+          <div class="captura-item-info">
+            <div class="captura-item-name">${n.nombre}</div>
+            <div class="captura-item-code">${k.toUpperCase()}</div>
+            <div class="captura-item-price">${precioActual.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}$</div>
+            <div class="captura-item-change ${isUp ? 'up' : 'down'}">
+              ${changeSymbol} ${Math.abs(cambio).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}$ (${isUp ? '+' : ''}${pctCambio}%)
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = `
+      <div style="background:#0a0a0a;min-height:100%;">
+        <div class="captura-header">
+          <div class="captura-logo">REAGAN BROS</div>
+          <div class="captura-tagline">BOLSA DE VALORES</div>
+          <div class="captura-time">${fechaHora}</div>
+        </div>
+        <div class="captura-content">
+          <div class="captura-title">📊 Cotizaciones en vivo</div>
+          <div class="captura-items">
+            ${items}
+          </div>
+          <div class="captura-footer">
+            Reagan Bros Company • Bolsa de Valores • Datos en tiempo real
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Usar html2canvas para capturar la imagen
+    const canvas = await html2canvas(container, {
+      backgroundColor: '#0a0a0a',
+      scale: 2,
+      useCORS: true,
+      allowTaint: true
+    });
+    
+    // Descargar la imagen
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = `bolsa-reagan-${ahora.getFullYear()}-${String(ahora.getMonth()+1).padStart(2,'0')}-${String(ahora.getDate()).padStart(2,'0')}-${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Limpiar
+    container.innerHTML = '';
+    showPopup('📸 Captura descargada!');
+  } catch (error) {
+    console.error('Error generando captura:', error);
+    showPopup('❌ Error al generar la captura');
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+};
+
+// Funciones para la cartera
+window.abrirModalCartera = function() {
+  document.getElementById('modalCartera').classList.add('active');
+  document.getElementById('usuarioId').focus();
+};
+
+window.cerrarModalCartera = function() {
+  document.getElementById('modalCartera').classList.remove('active');
+  document.getElementById('formularioCartera').style.display = 'block';
+  document.getElementById('infoCartera').classList.remove('active');
+  document.getElementById('usuarioId').value = '';
+  document.getElementById('errorMsg').innerHTML = '';
+};
+
+window.consultarCartera = async function() {
+  const idJuego = document.getElementById('usuarioId').value.trim();
+  const errorDiv = document.getElementById('errorMsg');
+  const btn = document.querySelector('.btn-submit');
+  
+  if (!idJuego) {
+    errorDiv.innerHTML = '<div class="error-msg">Por favor ingresa tu ID de usuario</div>';
+    return;
+  }
+  
+  btn.classList.add('loading');
+  btn.disabled = true;
+  errorDiv.innerHTML = '';
+  
+  try {
+    // Obtener los clientes de Firebase
+    const clientesSnapshot = await new Promise((resolve, reject) => {
+      onValue(ref(db, 'clientes/'), (snapshot) => {
+        resolve(snapshot);
+      }, (error) => {
+        reject(error);
+      }, { onlyOnce: true });
+    });
+    
+    const clientesData = clientesSnapshot.val() || {};
+    
+    // Buscar el cliente con el idJuego coincidente
+    let clienteId = null;
+    let cliente = null;
+    
+    for (const [key, data] of Object.entries(clientesData)) {
+      if (data.idJuego === idJuego) {
+        clienteId = key;
+        cliente = data;
+        break;
+      }
+    }
+    
+    if (!cliente) {
+      errorDiv.innerHTML = '<div class="error-msg">❌ Usuario no encontrado con ese ID</div>';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      return;
+    }
+    
+    // Obtener acciones del cliente
+    const acciones = cliente.acciones || {};
+    
+    // Calcular totales usando negociosDataGlobal
+    let totalAcciones = 0;
+    let valorTotal = 0;
+    const accionesList = [];
+    
+    Object.entries(acciones).forEach(([negocioId, cantidad]) => {
+      if (typeof cantidad === 'number' && cantidad > 0) {
+        const negocioData = window.negociosDataGlobal[negocioId];
+        if (negocioData) {
+          totalAcciones += cantidad;
+          const valorAccion = negocioData.valorAccion || 0;
+          const valorSubtotal = cantidad * valorAccion;
+          valorTotal += valorSubtotal;
+          
+          accionesList.push({
+            id: negocioId,
+            nombre: negocioData.nombre,
+            cantidad: cantidad,
+            precio: valorAccion,
+            subtotal: valorSubtotal
+          });
+        }
+      }
+    });
+    
+    // Ordenar por cantidad descendente
+    accionesList.sort((a, b) => b.cantidad - a.cantidad);
+    
+    // Mostrar información
+    document.getElementById('nombreUsuario').textContent = cliente.nombre || 'Usuario';
+    document.getElementById('idUsuario').textContent = `🪪 ${idJuego}`;
+    document.getElementById('totalAcciones').textContent = totalAcciones;
+    document.getElementById('valorTotal').textContent = fmtMoney(valorTotal);
+    
+    // Mostrar acciones
+    const listaAcciones = document.getElementById('listaAcciones');
+    if (accionesList.length === 0) {
+      listaAcciones.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">📭 No tienes acciones en tu cartera</div>';
+    } else {
+      listaAcciones.innerHTML = accionesList.map((acc, idx) => `
+        <div class="cartera-accion" style="animation:fadeIn .3s ease both;animation-delay:${idx*0.05}s">
+          <div class="cartera-accion-name">🏢 ${acc.nombre}</div>
+          <div class="cartera-accion-code">${acc.id.toUpperCase()}</div>
+          <div class="cartera-accion-stats">
+            <div class="cartera-accion-stat">
+              <span class="cartera-accion-stat-key">Cantidad:</span>
+              <span class="cartera-accion-stat-val">${acc.cantidad} acc.</span>
+            </div>
+            <div class="cartera-accion-stat">
+              <span class="cartera-accion-stat-key">Precio/u:</span>
+              <span class="cartera-accion-stat-val">${fmtMoney(acc.precio)}</span>
+            </div>
+            <div class="cartera-accion-stat">
+              <span class="cartera-accion-stat-key">Subtotal:</span>
+              <span class="cartera-accion-stat-val">${fmtMoney(acc.subtotal)}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // Mostrar cartera y ocultar formulario
+    document.getElementById('formularioCartera').style.display = 'none';
+    document.getElementById('infoCartera').classList.add('active');
+    
+  } catch (error) {
+    console.error('Error consultando cartera:', error);
+    errorDiv.innerHTML = '<div class="error-msg">❌ Error al consultar la cartera. Intenta de nuevo.</div>';
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+};
 </script>
 </body>
 </html>
-
