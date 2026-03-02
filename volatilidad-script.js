@@ -25,7 +25,7 @@ ${fmtMoney(d.anterior)} → **${fmtMoney(d.nuevo)}** (${d.sube ? "+" : "-"}${d.p
       username: "📈 Volatilidad",
       embeds: [
         {
-          title: "Cambios de volatilidad aplicados",
+          title: "Nuevos cambios de bolsa",
           description: lines.join("\n"),
           color: subidas >= bajadas ? 0x2ecc71 : 0xe74c3c,
           footer: {
